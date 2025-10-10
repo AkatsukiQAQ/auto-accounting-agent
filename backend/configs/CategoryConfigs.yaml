@@ -1,0 +1,47 @@
+version: 1
+locale: en-US  # Default language
+
+categories:
+  - name: Supermarket
+    keywords: ['もとまちユニオン']
+    subCategories: []
+
+  - name: Convenience Store
+    keywords: ['セブンイレブン', 'seven eleven', 'ファミリーマート', 'family mart', 'ローソン', 'lawson', 'ミニストップ', 'デイリーヤマザキ']
+    subCategories: []
+
+  - name: Transportation
+    keywords: ['駅', 'タクシー', '駐車場', '交通', '鉄道', 'バス', '地下鉄', 'モノレール', 'パーキング', 'Parking', 'Bus']
+    subCategories:
+      - name: Train
+        keywords: ['駅', '鉄道', '地下鉄', 'モノレール']
+      - name: Taxi
+        keywords: ['タクシー']
+      - name: Car
+        keywords: ['駐車場', 'パーキング', 'Parking']
+      - name: Bus
+        keywords: ['バス', 'Bus']
+
+  - name: Restaurant
+    keywords: ['レストラン', 'カフェ', '食堂', '飲食店', '居酒屋', 'バー', 'ラーメン', '寿司', 'すし', 'ピザ', 'パスタ', 'イタリアン', 'フレンチ', '中華', '和食', '洋食', '焼肉', 'ステーキ', 'カレー', 'うどん', 'そば', 'パン屋', 'ベーカリー', 'スイーツ', 'デザート']
+    subCategories: []
+
+  - name: Delivery
+    keywords: ['宅配', 'デリバリー', '配達', 'Uber Eats', '出前館', 'DoorDash']
+    subCategories: []
+
+  - name: Shopping
+    keywords: []
+    subCategories: []
+
+  - name: Game
+    keywords: ['Steam', 'Arknights', 'Ubisoft']
+    subCategories: []
+
+  - name: Health
+    keywords: ['病院', 'クリニック', '薬局', 'ドラッグストア', '歯科', '眼科', '耳鼻科', '内科', '外科', '整形外科', '小児科', '産婦人科', '皮膚科', '心療内科', '精神科', '健康', 'ジム']
+    subCategories: []
+
+  - name: Others
+    keywords: []
+    subCategories: []
