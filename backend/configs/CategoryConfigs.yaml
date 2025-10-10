@@ -42,6 +42,10 @@ categories:
     keywords: ['病院', 'クリニック', '薬局', 'ドラッグストア', '歯科', '眼科', '耳鼻科', '内科', '外科', '整形外科', '小児科', '産婦人科', '皮膚科', '心療内科', '精神科', '健康', 'ジム']
     subCategories: []
 
+  - name: Sports
+    keywords: []
+    subCategories: []
+
   - name: Others
     keywords: []
     subCategories: []

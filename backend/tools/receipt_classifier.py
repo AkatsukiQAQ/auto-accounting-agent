@@ -8,12 +8,17 @@ from backend.tools.ocr_result_parser import ParsedOcrResult
 
 categories = load_config('ReceiptCategories.yaml')['categories']
 
+# -------------------- Pydantic Models --------------------  #
 class ReceiptCategory(BaseModel):
     main_category: str = Field(..., description="Main category of the receipt. Saved in categories list.")
     sub_category: Optional[str] = Field(None, description="Sub category of the receipt. Saved in categories list. Can be found in subCatogories of main category.")
 
 class ClassificationResult(BaseModel):
     classification_results: List[ReceiptCategory] = Field(..., description="Classification results for all receipts")
+
+# -------------------- Tool Functions --------------------  #
+def regex_match_category():
+    pass
 
 """ 
 匹配流程: 

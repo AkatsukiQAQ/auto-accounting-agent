@@ -121,7 +121,8 @@ def llm_ocr_result_parser(ocr_results) -> ParsedOcrResult:
                 "4) For each receipt, detect the time in HH:MM format. If you can't find it, return null. Do not report date here.\n"
                 "5) For each receipt, detect the merchant name. Do not translate it. You should report it in the origin language. If you can't find it, return null.\n"
                 "6) We only accept the following currency types: " + ", ".join(accepted_currencies) + ". If you detect other currency types, ignore that receipt and do not reply anything.\n"
-                "7) Do not make it up.\n"
+                "7) Do not report points, taxes, or any other information.\n"
+                "8) Do not make it up.\n"
                 "\n"
                 "Here is the OCR result:\n"
             )
