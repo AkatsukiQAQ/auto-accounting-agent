@@ -43,7 +43,7 @@ categories:
     subCategories: []
 
   - name: Sports
-    keywords: []
+    keywords: ['Sport', 'スポーツ', 'ski', 'スキー']
     subCategories: []
 
   - name: Others

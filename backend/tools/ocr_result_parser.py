@@ -106,7 +106,7 @@ class CurrencyParser:
 
 
 @ tool('llm_ocr_result_parser', args_schema=OCR_Results, return_direct=False)
-def llm_ocr_result_parser(ocr_results) -> ParsedOcrResult:
+def model_ocr_result_parser(ocr_results) -> ParsedOcrResult:
     """
     Extract receipt information from the OCR result using LLM and return it as JSON.
     :param ocr_results: List of OCR results for all receipts, OCR_Full_Output object

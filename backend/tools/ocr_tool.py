@@ -72,3 +72,5 @@ if __name__ == "__main__":
     for i in response.ocr_results:
         print(i)
         print('-----------------------------------')
+
+#
