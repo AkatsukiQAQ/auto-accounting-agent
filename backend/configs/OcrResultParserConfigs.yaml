@@ -1,0 +1,14 @@
+currency:
+  accepted_currencies:
+    - CNY
+    - HKD
+    - JPY
+    - USD
+    - EUR
+    - GBP
+    - KRW
+
+  # Default currency for special symbos
+  symbol_defaults:
+    ¥: CNY
+    $: USD
