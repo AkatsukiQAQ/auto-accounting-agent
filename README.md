@@ -21,7 +21,7 @@
 ## Introduction <a name="introduction"></a>
 Accounting, as a means of expense management, is essential in daily life. However, accounting software on the market requires users to manually fill in for each income and expense. For daily life, we may have dozens of expenses every day for purchasing daily necessities and food. Therefore, manual accounting is a very troublesome thing.
 
-This project has built an agent that can help users automate the accounting process, allowing users to complete the accounting of multiple income and expenses through very simple operations.
+This project has built an agent that can help users **automate the accounting process**, allowing users to complete the accounting of multiple income and expenses through very simple operations.
 
 
 <!-- --- -->
@@ -30,13 +30,13 @@ This project has built an agent that can help users automate the accounting proc
 ### Installation <a name="installation"></a>
 **1. Clone the repository**
 ```bash
-git clone https://github.com/AkatsukiQAQ/Object_Recognition_Agent.git
-cd Object_Recognition_Agent
+git clone https://github.com/AkatsukiQAQ/auto-accounting-agent
+cd auto-accounting-agent
 ```
 
 **2. Environment setup**
 ```bash
-conda create -n object_recognition_agent python=3.11 -y
+conda create -n auto-accounting-agent python=3.11 -y
 pip install -r requirements.txt
 ```
 
