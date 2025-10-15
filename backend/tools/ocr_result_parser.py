@@ -105,7 +105,7 @@ class CurrencyParser:
 # TODO: Non-AI parser development -> Amount parser, Date parser, Vendor parser, Category parser, etc.
 
 
-@ tool('llm_ocr_result_parser', args_schema=OCR_Results, return_direct=False)
+@tool('model_ocr_result_parser', args_schema=OCR_Results, return_direct=False)
 def model_ocr_result_parser(ocr_results) -> ParsedOcrResult:
     """
     Extract receipt information from the OCR result using LLM and return it as JSON.

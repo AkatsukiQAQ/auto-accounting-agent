@@ -1,7 +1,7 @@
 import dataclasses
 import re, unicodedata
 
-from typing import Optional, List, Tuple
+from typing import Optional, Union, List, Tuple
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
@@ -86,13 +86,14 @@ def regex(text: str, regex: re.Pattern) -> (bool, Optional[str]):
     1. If matched, return True and the matched keyword
     2. If not matched, return False and None
     """
-    if regex.search(text):
+    if regex and regex.search(text):
         m = regex.search(text)
         return True, m.group(0)
     else:
         return False, None
 
 def sort(results: List[ReceiptCategory]) -> ClassificationResult:
+    """ Sort the list based on idx """
     pass    # TODO
 
 # -------------------- Main class --------------------  #
@@ -103,7 +104,7 @@ class Classifier:
     def __init__(self):
         self.categories = _load_categories()
 
-    def regex_search_one(self, merchant: str, categories: List[Optional[Category, subCategory]]) -> Tuple[bool, Optional[str], Optional[Category, subCategory]]:
+    def regex_search_one(self, merchant: str, categories: List[Union[Category, subCategory]]) -> Tuple[bool, Optional[str], Optional[Union[Category, subCategory]]]:
         """
         Using Regex match for briefly classification for single merchant name
         :param merchant: merchant name
@@ -134,7 +135,7 @@ class Classifier:
                     if sub_matched:
                         classified.append(ReceiptCategory(idx=idx, category=cat.name, sub_category=sub_cat.name, matched=True, keyword=sub_keyword))
                     else:
-                        sub_cat_pending.append((idx, None, cat))
+                        sub_cat_pending.append((idx, keyword, cat))
                 else:
                     classified.append((idx, keyword, cat))
             else:
@@ -142,7 +143,7 @@ class Classifier:
 
         return classified, sub_cat_pending, pending
 
-    def model_search_cat(self, pending: List[Tuple]) -> ClassificationResult:
+    def model_search_cat(self, pending: List[Tuple]) -> List[ReceiptCategory]:
         """
         Use model to search for category
         :param pending:
@@ -168,11 +169,11 @@ class Classifier:
         pending_texts.strip()
 
         # 3) Prepare prompt
-        text = ("Classify the receipts into pre-defined category. The rules are provided as below:\n"
-                "1. The categories are defined in format <category>: <sub_category_1>, ..., <sub_category_n>. Categories with no sub-categories are defined as <category>: No sub_category.\n"
+        prompt = ("Classify the receipts into pre-defined category. The rules are provided as below:\n"
+                "1. The categories are defined in format <category>: <sub_category_1>, ..., <sub_category_n>. Categories with no sub_categories are defined as <category>: No sub_category.\n"
                 "2. The receipts are defined in format Receipt <idx>: <merchant_name>. You should classify them based on the merchant_name and also return the idx. Be aware that the idx of the receipt may not be continues or in ascending order.\n"
                 "3. You should process each receipt separately and return the result one by one.\n"
-                "4. You should return idx, category, sub_category, matched and keyword for each receipt. The idx here is the pre-set idx, not the order of receipts in the list.\n"
+                "4. You should return idx, category, sub_category, matched and keyword for each receipt. Notice that the idx here is the pre-set idx, not the order of receipts in the list.\n"
                 "5. If a receipt only matched the category and didn't matched any sub_category, return the matched category and keep sub_category as None.\n"
                 "6. If a receipt didn't matched any category, return the category as others and keep sub_category as None.\n"
                 "7. If a receipt matched a category or sub_category, set matched to True. Otherwise, it should be False.\n"
@@ -183,12 +184,12 @@ class Classifier:
                 "\n"
                 "Here are the receipts:\n"
                 f"{pending_texts}")
-        prompt = [
+        messages = [
             {
                 "role": "user",
                 "content": [
                     {"type": "text", "text":
-                        text
+                        prompt
                      },
                 ],
             }
@@ -197,16 +198,53 @@ class Classifier:
         # 4) Step 4: Invoke LLM and return result
         model = ChatOpenAI(model="gpt-5-nano", temperature=0)
         structured_llm = model.with_structured_output(ClassificationResult)
-        result: ClassificationResult = structured_llm.invoke(prompt)
-        return result
+        result: ClassificationResult = structured_llm.invoke(messages)
+        return result.classification_results
 
-    def model_search_sub_cat(self, sub_cat_pending: List[Tuple]) -> ClassificationResult:
+    def model_search_sub_cat(self, sub_cat_pending: List[Tuple]) -> List[ReceiptCategory]:
         """
         Use model to search sub category
         :param sub_cat_pending:
         :return:
         """
-        pass
+        # 1) Prepare sub_category and receipt text
+        texts = ""
+        for cat in sub_cat_pending:
+            text = (f"Receipt {cat[0]}\n"
+                    f"Keyword: {cat[1]}\n"
+                    f"Main category is {cat[2].name}\n"
+                    f"Pre-defined sub_categories are ")
+            for sub_cat in cat[2].sub_categories:
+                text += sub_cat.name + ", "
+            text.strip(", ")
+            texts += text + "\n\n"
+        texts.strip()
+
+        # 2) Prepare prompt
+        prompt = ("Classify the receipts into pre-defined sub_category. The rules are provided as below:\n"
+                  "1. The receipt with be provided with idx, keyword, main category name, and a list of sub_category candidates.\n"
+                  "2. You should process each receipt separately and return the result one by one.\n"
+                  "3. You should classify the receipt based on the provided keyword and return the matched sub_category name.\n"
+                  "4. You should also return the idx of the receipt. Notice that the idx here is the pre-set idx, not the order of receipts in the list.\n"
+                  "5. You should return the main category as it is, and return the matched sub_category. If the receipt dose not match any sub_category, return None.\n"
+                  "Here are the receipts:\n"
+                  f"{texts}")
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text":
+                        prompt
+                     },
+                ],
+            }
+        ]
+
+        # 4) Step 4: Invoke LLM and return result
+        model = ChatOpenAI(model="gpt-5-nano", temperature=0)
+        structured_llm = model.with_structured_output(ClassificationResult)
+        result: ClassificationResult = structured_llm.invoke(messages)
+        return result.classification_results
 
     def classify(self, parsed_ocr_results: List[ParsedReceipt]) -> ClassificationResult:
         """
@@ -228,12 +266,15 @@ class Classifier:
             pending_results: List[ReceiptCategory] = self.model_search_cat(pending).classification_results
             classified += pending_results
 
-        # 4) Sort concatenated results in ascending order and return it
-        return sort(classified)
+        # 4) Convert classified result into pre-defined structure
 
+
+        # 5) Sort concatenated results in ascending order and return it
+        # return sort(classified)
+        return ClassificationResult(classification_result=classified)
 
 # Warp up to LangChain tools
-@ tool('classification_tool', args_schema=ParsedOcrResult, return_direct=False)
+@tool('classification_tool', args_schema=ParsedOcrResult, return_direct=False)
 def classification_tool(parsed_ocr_results) -> ClassificationResult:
     """
     Classify the structured ocr results based on pre-defined categories and sub_categories
