@@ -87,3 +87,12 @@ result = agent.invoke({"messages": prompt})
 print(result['messages'][-1].content)
 ```
 The agent will give a report about how much you spend in pre-defined category, and also give some advices about how to reduce the expense.
+
+
+<!-- --- -->
+
+## TO-DO & Next Step <a name="usage"></a>
+- [ ] Build a Web UI for the pipeline using FastAPI and React
+
+
+<!-- --- -->
