@@ -35,16 +35,29 @@ cd auto-accounting-agent
 ```
 
 **2. Environment setup**
+
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management. `pyproject.toml` + `uv.lock` are source of truth; there is no `requirements.txt`.
+
 ```bash
-conda create -n auto-accounting-agent python=3.11 -y
-pip install -r requirements.txt
+# Install uv if you don't have it (one-off)
+pip install uv
+
+# Create .venv/ and install runtime + dev deps (pinned by uv.lock)
+uv sync --dev
 ```
+
+**PyCharm:** point **Settings → Project → Python Interpreter** at `.venv/Scripts/python.exe` (Windows) or `.venv/bin/python` (macOS/Linux). PyCharm 2024.1+ can also select the uv interpreter type directly from `pyproject.toml`.
 
 **3. Set up API keys**
 
--  Create `.env` file and write in your OpenAI API key.
+Create `.env` file and write in your OpenAI API key.
 ```bash
 echo "API_KEY=your_api_key_here" > .env
+```
+
+**4. Run tests**
+```bash
+uv run pytest backend/tests/core/
 ```
 
 ### Quick Start <a name="quick_start"></a>
