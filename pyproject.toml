@@ -1,17 +1,13 @@
 [project]
 name = "auto-accounting-agent"
 version = "0.1.0"
-description = "MITA Finance — LangGraph-powered receipt OCR + classification, in transition from MVP pipeline to FastAPI service."
+description = "MITA Finance — receipt OCR + classification pipeline served as a FastAPI app."
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 license = { text = "MIT" }
 dependencies = [
     "alembic>=1.13",
     "fastapi>=0.115",
-    "langchain>=0.3",
-    "langchain-core>=0.3",
-    "langchain-openai>=0.3",
-    "langgraph>=0.6",
     "openai>=2.0",
     "pydantic>=2.0",
     "pydantic-settings>=2.5",
