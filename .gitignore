@@ -224,3 +224,9 @@ __marimo__/
 # test files
 test_data/*
 test.py
+
+# Phase 1 runtime artifacts
+storage/
+mita.db
+mita.db-wal
+mita.db-shm

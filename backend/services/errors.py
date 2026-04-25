@@ -38,3 +38,20 @@ class CategoryInUseError(ConflictError):
 
 class SystemCategoryError(ConflictError):
     code = "cannot_delete_system_category"
+
+
+class ApiKeyNotConfiguredError(ServiceError):
+    """Raised when the pipeline would need an LLM but no API key is stored in settings.
+
+    Phase 1 decision: OpenAI key lives only in `user_settings.apiKeys.openai`, never
+    in env vars. Routes that need the LLM raise this when the setting is missing;
+    the API layer translates it to 400 with a code the frontend can branch on.
+    """
+
+    code = "api_key_not_configured"
+
+
+class UnsupportedImageError(ValidationError):
+    """Raised by the import route when the uploaded file fails image-format checks."""
+
+    code = "unsupported_image"
