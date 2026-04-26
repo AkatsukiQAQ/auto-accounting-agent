@@ -114,11 +114,33 @@ Response is a draft `previewTransaction`. The frontend lets the user edit it, th
 | `make test` | `uv run pytest` |
 | `make seed-api-key` | copy `.env` key into the DB |
 
+### Run the full stack (backend + frontend) <a name="full_stack"></a>
+
+The frontend is a Vite + React 19 + TypeScript app under `frontend/`. It expects the backend running at `http://localhost:8000` (matched by the backend's CORS allowlist).
+
+```bash
+# Terminal 1 — backend
+make db-migrate
+make seed-api-key   # one-shot: copies .env's OPENAI_API_KEY into the DB
+make dev            # uvicorn on :8000
+
+# Terminal 2 — frontend
+cd frontend
+cp .env.example .env       # adjust VITE_API_BASE_URL if backend isn't on :8000
+npm install
+npm run dev                # Vite on :5173
+```
+
+Open `http://localhost:5173`. The five screens (`/`, `/records`, `/import`, `/categories`, `/settings`) all read live data from the backend.
+
+If you skipped `make seed-api-key`, set the OpenAI key from inside the app at **Settings → API Keys** before using the photo-import flow.
+
 <!-- --- -->
 
 ## TO-DO & Next Step <a name="todo"></a>
 - [ ] Phase 2 backend: accounts, merchant normalization, transfers, budgets, recurring rules, review queue
-- [ ] Frontend Phase 1: wire the 5 screens to the real API (currently mocked against the prototype)
+- [ ] Phase 2 frontend: accounts / budget / recurring / review screens
+- [ ] Phase 3: chatbot, dark mode, i18n (zh/ja), correction-learning rules
 
 
 <!-- --- -->

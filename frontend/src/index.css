@@ -1,68 +1,138 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* @import statements MUST come first per CSS spec — before tailwindcss. */
+@import url("https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Indie+Flower&family=Klee+One:wght@400;600&family=Fraunces:opsz,wght@9..144,400..800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+/* Web fonts above:
+   - Kalam (400 + 700) — used for HEADING handwriting (.hand). 700 gives
+     real bold-pen weight; 400 is upright neat handwriting.
+   - Indie Flower (400) — used for BODY handwriting (.hand-body). Lighter,
+     conversational tone.
+   - Klee One — CJK handwritten fallback.
+   - Fraunces — display serif (used in PageHeader serif titles).
+   - JetBrains Mono — mono.
+   - Noto Sans JP — CJK sans, default body.
+   Caveat was tested but felt too cursive/slanted at title sizes. */
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Design tokens — MITA's "cream-paper + ink" palette + handwritten typography
+   stack. Lifted verbatim from design/design-references/styles.css so we don't
+   re-invent values. Tailwind 4 turns each --color-X / --font-X into a theme
+   token usable as bg-X / font-X / text-X classes. */
+@theme {
+  /* ── Surface (cream paper, warm yellow undertone) ── */
+  --color-cream-50:  #FFFEF8;
+  --color-cream-100: #FEF9E7;
+  --color-cream-200: #FCF3CF;
+  --color-cream-300: #F9E79F;
+  --color-cream-400: #F4D03F;
+  --color-cream-500: #E8C547;
+
+  /* ── Text + borders (warm near-black ink) ── */
+  --color-ink-100: #F2ECE0;
+  --color-ink-200: #E5DED0;
+  --color-ink-300: #C8BEB0;
+  --color-ink-400: #8B7E6C;
+  --color-ink-500: #6B5E4E;
+  --color-ink-700: #3D342A;
+  --color-ink-900: #1F1A14;
+
+  /* ── Accent (earth tones, not synthetic neons) ── */
+  --color-accent-amber: #D97706;
+  --color-accent-olive: #7A8450;
+  --color-accent-rose:  #B56576;
+  --color-accent-sage:  #9DB17C;
+
+  /* ── Semantic state (muted, not pure red/green) ── */
+  --color-pos-500: #4F7B49;   /* olive green for income */
+  --color-pos-50:  #E8F0E0;
+  --color-neg-500: #B8563E;   /* terracotta for expense */
+  --color-neg-50:  #F5E6DE;
+  --color-warn-500: #D97706;
+  --color-warn-50:  #FFF8E1;
+
+  /* ── Category palette (CAT_COLORS from primitives.jsx) ── */
+  --color-cat-food: #FCE5CE;
+  --color-cat-food-dot: #D97706;
+  --color-cat-transport: #DCE5F3;
+  --color-cat-transport-dot: #3B5EAA;
+  --color-cat-shopping: #F4DCE8;
+  --color-cat-shopping-dot: #B56576;
+  --color-cat-bills: #E5E0F3;
+  --color-cat-bills-dot: #6B5BA8;
+  --color-cat-entertain: #F9E6BD;
+  --color-cat-entertain-dot: #C99A33;
+  --color-cat-health: #DDEED6;
+  --color-cat-health-dot: #6E9455;
+  --color-cat-income: #D7E8CD;
+  --color-cat-income-dot: #4F7B49;
+  --color-cat-rent: #EEDFC8;
+  --color-cat-rent-dot: #9E6A37;
+  --color-cat-other: #E9E4D8;
+  --color-cat-other-dot: #8B7E6C;
+
+  /* ── Type stacks ── */
+  --font-sans:    "Noto Sans JP", "Geist", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  --font-hand:      "Kalam", "Indie Flower", "Klee One", cursive;
+  --font-hand-body: "Indie Flower", "Kalam", "Klee One", cursive;
+  --font-serif:     "Fraunces", "Noto Sans JP", serif;
+  --font-num:       "Kalam", "Indie Flower", "Klee One", cursive;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+html, body, #root {
+  height: 100%;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  color: var(--color-ink-900);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Grainy paper background — radial gradients + warm cream base.
+   Applied to <body> so every page picks it up. Lifted from styles.css. */
+body {
+  background:
+    radial-gradient(1200px 800px at 80% -10%, rgba(228, 195, 98, 0.18), transparent 60%),
+    radial-gradient(900px 700px at -10% 110%, rgba(228, 195, 98, 0.10), transparent 60%),
+    var(--color-cream-100);
+  background-attachment: fixed;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+/* Handwritten / serif / monospace utility classes — match prototype usage.
+   Apply selectively (logo, hero numbers, tips header). Don't blanket the app.
+   .hand uses Kalam-700 (real bold-pen feel for prominent headings);
+   .hand-body uses Indie Flower-400 (lighter, casual body tone).
+   The trailing generic family silences the CSS linter (which can't follow
+   `var()`); the actual stacks already include cursive at the end. */
+.hand       { font-family: var(--font-hand), cursive; font-weight: 700; }
+.hand-body  { font-family: var(--font-hand-body), cursive; font-weight: 400; }
+.serif      { font-family: var(--font-serif), serif; }
+.num        { font-family: var(--font-num), cursive; font-variant-numeric: tabular-nums; letter-spacing: 0.2px; }
+
+/* Paper card with warm brown shadow — matches prototype's .card-paper. */
+.card-paper {
+  background: var(--color-cream-50);
+  border: 1px solid var(--color-ink-200);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 2px rgba(95, 75, 40, 0.04),
+    0 8px 24px -12px rgba(95, 75, 40, 0.12);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* Carousel transitions for the import draft confirmation flow. */
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInFromLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.slide-in-from-right { animation: slideInFromRight 220ms cubic-bezier(0.4, 0, 0.2, 1); }
+.slide-in-from-left  { animation: slideInFromLeft  220ms cubic-bezier(0.4, 0, 0.2, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-in-from-right, .slide-in-from-left { animation: none; }
 }

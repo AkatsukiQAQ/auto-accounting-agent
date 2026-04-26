@@ -86,7 +86,10 @@ def _parse_occurred_at(parsed: ParsedReceipt) -> datetime:
     return datetime.now(_UTC)
 
 
-def _confidences(parsed: ParsedReceipt, classified: ReceiptClassification | None) -> tuple[float, float, float]:
+def _overall_confidence(
+    parsed: ParsedReceipt, classified: ReceiptClassification | None
+) -> float:
+    """0.5 * parse_c + 0.5 * classify_c per design doc §Import."""
     if parsed.currency and parsed.amount is not None and parsed.date:
         parse_c = 1.0
     elif parsed.currency and parsed.amount is not None:
@@ -103,11 +106,42 @@ def _confidences(parsed: ParsedReceipt, classified: ReceiptClassification | None
     else:
         classify_c = 0.4
 
-    return parse_c, classify_c, 0.5 * parse_c + 0.5 * classify_c
+    return 0.5 * parse_c + 0.5 * classify_c
 
 
-def _placeholder_preview(public_image_url: str, llm_model: str) -> ImportPhotoData:
-    preview = TransactionCreate(
+def _build_preview(
+    parsed: ParsedReceipt,
+    classified: ReceiptClassification | None,
+    public_image_url: str,
+    raw_text: str,
+    llm_model: str,
+) -> TransactionCreate:
+    amount_cents = (
+        -round((parsed.amount or 0) * 100) if parsed.amount is not None else 0
+    )
+    category_id = "other"
+    if classified is not None and classified.matched:
+        category_id = classified.category
+    return TransactionCreate(
+        occurred_at=_parse_occurred_at(parsed),
+        merchant=parsed.merchant or "Unknown",
+        amount_cents=amount_cents,
+        currency=parsed.currency or "USD",
+        category_id=category_id,
+        source="photo",
+        confidence=_overall_confidence(parsed, classified),
+        raw=RawIn(
+            image_url=public_image_url,
+            ocr_text=raw_text,
+            ocr_engine=llm_model,
+            llm_model=llm_model,
+        ),
+    )
+
+
+def _placeholder_response(public_image_url: str, llm_model: str) -> ImportPhotoData:
+    """Empty-OCR fallback: return one placeholder draft so the user can fill in manually."""
+    placeholder = TransactionCreate(
         occurred_at=datetime.now(_UTC),
         merchant="Unknown",
         amount_cents=0,
@@ -123,8 +157,8 @@ def _placeholder_preview(public_image_url: str, llm_model: str) -> ImportPhotoDa
         ),
     )
     return ImportPhotoData(
-        preview_transaction=preview,
-        confidence=0.0,
+        preview_transactions=[placeholder],
+        confidences=[0.0],
         ocr_text="",
         ocr_engine=llm_model,
         llm_model=llm_model,
@@ -154,56 +188,32 @@ def post_photo(
 
     if not parsed_list.parsed_ocr_results:
         logger.info("OCR returned no receipts; returning placeholder draft")
-        return Data(data=_placeholder_preview(public_url, result.llm_model))
+        return Data(data=_placeholder_response(public_url, result.llm_model))
 
-    if len(parsed_list.parsed_ocr_results) > 1:
-        logger.warning(
-            "multi-receipt image had %d receipts; keeping first (Phase 1 limitation)",
-            len(parsed_list.parsed_ocr_results),
+    classified_by_idx = {
+        c.idx: c for c in classified_list.classification_results
+    }
+
+    previews: list[TransactionCreate] = []
+    confidences: list[float] = []
+    ocr_chunks: list[str] = []
+    for i, parsed in enumerate(parsed_list.parsed_ocr_results):
+        classified = classified_by_idx.get(i)
+        previews.append(
+            _build_preview(parsed, classified, public_url, parsed.raw_text, result.llm_model)
         )
+        confidences.append(_overall_confidence(parsed, classified))
+        if parsed.raw_text:
+            ocr_chunks.append(parsed.raw_text)
 
-    first_parsed = parsed_list.parsed_ocr_results[0]
-    first_class: ReceiptClassification | None = (
-        classified_list.classification_results[0]
-        if classified_list.classification_results
-        else None
-    )
-
-    parse_c, classify_c, overall = _confidences(first_parsed, first_class)
-
-    amount_cents = (
-        -round((first_parsed.amount or 0) * 100)
-        if first_parsed.amount is not None
-        else 0
-    )
-
-    category_id = "other"
-    if first_class is not None and first_class.matched:
-        category_id = first_class.category
-
-    ocr_text = first_parsed.raw_text
-
-    preview = TransactionCreate(
-        occurred_at=_parse_occurred_at(first_parsed),
-        merchant=first_parsed.merchant or "Unknown",
-        amount_cents=amount_cents,
-        currency=first_parsed.currency or "USD",
-        category_id=category_id,
-        source="photo",
-        confidence=overall,
-        raw=RawIn(
-            image_url=public_url,
-            ocr_text=ocr_text,
-            ocr_engine=result.llm_model,
-            llm_model=result.llm_model,
-        ),
-    )
+    if len(previews) > 1:
+        logger.info("multi-receipt image had %d receipts; returning all", len(previews))
 
     return Data(
         data=ImportPhotoData(
-            preview_transaction=preview,
-            confidence=overall,
-            ocr_text=ocr_text,
+            preview_transactions=previews,
+            confidences=confidences,
+            ocr_text="\n\n".join(ocr_chunks),
             ocr_engine=result.llm_model,
             llm_model=result.llm_model,
         )
