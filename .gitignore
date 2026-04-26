@@ -8,19 +8,23 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
+# These Python build artefact rules come from the GitHub Python .gitignore
+# template. Anchored to the repo root with a leading `/` so they don't
+# accidentally swallow nested directories like frontend/src/lib/.
+# (frontend/.gitignore handles its own `dist` / `node_modules`.)
+/build/
+/develop-eggs/
+/dist/
+/downloads/
+/eggs/
+/.eggs/
+/lib/
+/lib64/
+/parts/
+/sdist/
+/var/
+/wheels/
+/share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
