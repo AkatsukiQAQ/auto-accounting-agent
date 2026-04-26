@@ -69,13 +69,19 @@
   --color-cat-other: #E9E4D8;
   --color-cat-other-dot: #8B7E6C;
 
-  /* ── Type stacks ── */
-  --font-sans:    "Noto Sans JP", "Geist", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  /* ── Type stacks ──
+   * .hand (titles)        — Kalam-700, locked across all locales.
+   * .hand-body (non-title) — Indie Flower for EN; per-locale swap in Phase 3
+   *                          (zh: Ma Shan Zheng, ja: Klee One).
+   * .num (numeric display) — Klee One, locked per design doc styles.css.
+   * .serif (page titles)   — Fraunces.
+   */
+  --font-sans:      "Noto Sans JP", "Geist", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
   --font-hand:      "Kalam", "Indie Flower", "Klee One", cursive;
   --font-hand-body: "Indie Flower", "Kalam", "Klee One", cursive;
+  --font-num:       "Klee One", "Kalam", "Indie Flower", cursive;
   --font-serif:     "Fraunces", "Noto Sans JP", serif;
-  --font-num:       "Kalam", "Indie Flower", "Klee One", cursive;
-  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono:      "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html, body, #root {

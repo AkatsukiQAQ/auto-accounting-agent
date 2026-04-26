@@ -163,13 +163,14 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      {/* Hero greeting — handwritten title, eyebrow date, subtitle */}
+      {/* Hero greeting — `.hand-body` (special non-title text). `.hand` is
+          reserved for the brand block / true titles, locked to Kalam-700. */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-500">
             {dateEyebrow}
           </div>
-          <h1 className="hand mt-1 text-4xl text-ink-900 md:text-5xl">
+          <h1 className="hand-body mt-1 text-4xl text-ink-900 md:text-5xl">
             {greeting}, {greetingName} <span className="text-warn-500">✦</span>
           </h1>
           <p className="mt-2 text-sm text-ink-500">
@@ -275,7 +276,7 @@ function KpiCard({
       <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-500">
         {label}
       </div>
-      <div className={['hand mt-1 text-3xl leading-tight md:text-4xl', toneCls].join(' ')}>
+      <div className={['num mt-1 text-3xl leading-tight md:text-4xl', toneCls].join(' ')}>
         {display}
       </div>
       {subtitle ? (
