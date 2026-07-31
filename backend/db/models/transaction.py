@@ -3,14 +3,22 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, String, Text, func
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, Float, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.db.base import Base
 
+TRANSACTION_TYPES: tuple[str, ...] = ("normal", "transfer_out", "transfer_in", "recurring")
+
 
 class Transaction(Base):
     __tablename__ = "transactions"
+    __table_args__ = (
+        CheckConstraint(
+            "type IN ('normal','transfer_out','transfer_in','recurring')",
+            name="type",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     occurred_at: Mapped[datetime] = mapped_column(
@@ -25,6 +33,19 @@ class Transaction(Base):
     category_id: Mapped[str] = mapped_column(
         ForeignKey("categories.id"), nullable=False, index=True
     )
+    account_id: Mapped[str] = mapped_column(
+        ForeignKey("accounts.id"), nullable=False, index=True
+    )
+    # "normal" | "transfer_out" | "transfer_in" | "recurring". System-assigned:
+    # never PATCHable; transfer legs are only minted by the transfer service.
+    type: Mapped[str] = mapped_column(String, nullable=False, default="normal", server_default="normal")
+    transfer_group_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    recurring_rule_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    # merchant_raw = verbatim OCR / user input; merchant_normalized = brand-level
+    # name. From Phase 2 on, `merchant` is a compat alias kept equal to the
+    # normalized value (dropped in a future migration).
+    merchant_raw: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    merchant_normalized: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     source: Mapped[str] = mapped_column(String, nullable=False)  # "photo" | "manual"
     confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

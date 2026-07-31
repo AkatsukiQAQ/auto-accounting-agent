@@ -23,11 +23,11 @@ from backend.services.transactions import create_transaction
 UTC = timezone.utc
 
 
-def test_list_returns_seeded_nine_in_sort_order(session: Session) -> None:
+def test_list_returns_seeded_slugs_in_sort_order(session: Session) -> None:
     cats = list_categories(session)
     assert [c.id for c in cats] == [
         "food", "transport", "shopping", "bills",
-        "entertain", "health", "income", "rent", "other",
+        "entertain", "health", "income", "rent", "other", "transfer",
     ]
 
 

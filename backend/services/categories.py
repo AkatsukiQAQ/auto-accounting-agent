@@ -1,7 +1,8 @@
 """Category CRUD service.
 
 Two non-obvious invariants:
-- The `other` slug is undeletable — it's the classifier's fallback bucket.
+- System slugs (`other` — the classifier's fallback bucket; `transfer` — the
+  ledger's transfer-leg category) are undeletable.
 - A category referenced by any transaction cannot be deleted; frontend must
   bulk-reassign first. Returning 409 (not 500) makes that actionable.
 """
@@ -14,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend.db.models import Category, Transaction
+from backend.db.seeders.categories import SYSTEM_CATEGORY_SLUGS
 from backend.services.errors import (
     CategoryInUseError,
     NotFoundError,
@@ -21,7 +23,7 @@ from backend.services.errors import (
     ValidationError,
 )
 
-SYSTEM_SLUGS: frozenset[str] = frozenset({"other"})
+SYSTEM_SLUGS: frozenset[str] = frozenset(SYSTEM_CATEGORY_SLUGS)
 _SLUG_RE = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
 _HEX_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 

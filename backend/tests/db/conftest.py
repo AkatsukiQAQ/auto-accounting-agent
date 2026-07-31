@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from backend.db.base import Base
-from backend.db.models import Category, Transaction, UserSettings  # noqa: F401
+import backend.db.models  # noqa: F401  (importing the package registers every table)
 
 
 @pytest.fixture()

@@ -106,8 +106,15 @@ def _hydrate_categories_from_db(session: Session) -> list[CoreCategory]:
     label ("Food"). The slug is what flows through classification results and
     becomes `categoryId` on transactions — keeping one string end-to-end avoids
     a mapping round-trip.
+
+    Only `auto_assign=True` rows participate: system categories like `transfer`
+    exist for ledger bookkeeping and must never be offered to the classifier.
     """
-    rows = session.scalars(select(DbCategory).order_by(DbCategory.sort_order)).all()
+    rows = session.scalars(
+        select(DbCategory)
+        .where(DbCategory.auto_assign.is_(True))
+        .order_by(DbCategory.sort_order)
+    ).all()
     return [
         CoreCategory(
             name=row.id,

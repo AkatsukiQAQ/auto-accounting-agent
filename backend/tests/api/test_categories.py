@@ -3,13 +3,13 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 
-def test_list_returns_nine_seeded_in_sort_order(client: TestClient) -> None:
+def test_list_returns_seeded_slugs_in_sort_order(client: TestClient) -> None:
     r = client.get("/api/categories")
     assert r.status_code == 200
     data = r.json()["data"]
     assert [c["id"] for c in data] == [
         "food", "transport", "shopping", "bills",
-        "entertain", "health", "income", "rent", "other",
+        "entertain", "health", "income", "rent", "other", "transfer",
     ]
     # camelCase serialization sanity
     assert "colorBg" in data[0] and "autoAssign" in data[0]
