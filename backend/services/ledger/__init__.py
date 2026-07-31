@@ -5,7 +5,8 @@ workers call it; nothing writes `transactions` or bumps `accounts` directly).
 `accounts` owns account CRUD, reconciliation and full-balance recompute.
 """
 from backend.db.seeders.accounts import DEFAULT_CASH_ACCOUNT_ID
-from backend.services.ledger import apply  # noqa: I001 — must precede accounts (accounts imports apply)
+from backend.services.ledger import apply  # noqa: I001 — must precede accounts/transfers (they import apply)
 from backend.services.ledger import accounts
+from backend.services.ledger import transfers
 
-__all__ = ["DEFAULT_CASH_ACCOUNT_ID", "accounts", "apply"]
+__all__ = ["DEFAULT_CASH_ACCOUNT_ID", "accounts", "apply", "transfers"]
