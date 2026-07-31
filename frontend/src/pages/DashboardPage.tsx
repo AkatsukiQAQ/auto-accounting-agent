@@ -7,7 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 import { PaperCard } from '@/components/ui/PaperCard';
 import { Spinner } from '@/components/ui/Spinner';
 import { LineChart } from '@/components/charts/LineChart';
-import { DonutChart } from '@/components/charts/DonutChart';
+import { DonutChart, sliceColor } from '@/components/charts/DonutChart';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
 import { useSettings } from '@/hooks/useSettings';
@@ -99,20 +99,38 @@ export function DashboardPage() {
     return buckets.map((b) => ({ label: b.label, value: b.value }));
   }, [allInWindow, now, displayCcy]);
 
-  // Donut: this month by category
+  // Donut: this month by category. Beyond the top 5 spenders, slices collapse
+  // into a neutral "Others" so the legend stays 1:1 with the ring (identity is
+  // carried by shared order + percentage, not by color alone — several cat-dot
+  // hues are close under color-vision deficiency).
   const donutData = useMemo(() => {
     const sums: Record<string, number> = {};
     for (const t of thisMonth) {
       if (t.amountCents >= 0) continue;
       sums[t.categoryId] = (sums[t.categoryId] ?? 0) + Math.abs(t.amountCents);
     }
-    return Object.entries(sums)
-      .map(([slug, cents]) => ({
-        slug,
-        label: cats.data?.find((c) => c.id === slug)?.label ?? slug,
-        value: toMajor(cents, displayCcy),
-      }))
+    const all = Object.entries(sums)
+      .map(([slug, cents]) => {
+        const cat = cats.data?.find((c) => c.id === slug);
+        return {
+          slug,
+          label: cat?.label ?? slug,
+          value: toMajor(cents, displayCcy),
+          color: cat?.colorDot,
+        };
+      })
       .sort((a, b) => b.value - a.value);
+    if (all.length <= 6) return all;
+    const rest = all.slice(5);
+    return [
+      ...all.slice(0, 5),
+      {
+        slug: '__others',
+        label: `Others (${rest.length})`,
+        value: rest.reduce((acc, d) => acc + d.value, 0),
+        color: 'var(--color-ink-300)',
+      },
+    ];
   }, [thisMonth, cats.data, displayCcy]);
 
   if (window6m.isLoading) {
@@ -145,6 +163,7 @@ export function DashboardPage() {
   }
 
   const sym = SYM[displayCcy] ?? displayCcy + ' ';
+  const donutTotal = donutData.reduce((acc, d) => acc + d.value, 0);
   const dateEyebrow = now
     .toLocaleString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
     .toUpperCase();
@@ -205,25 +224,35 @@ export function DashboardPage() {
             <h3 className="text-sm font-semibold text-ink-900">By category</h3>
             <span className="text-xs text-ink-500">this month</span>
           </div>
-          <div className="flex items-center justify-center">
+          {/* Donut left, legend right — port of dashboard-a.jsx's layout. Every
+              slice gets a legend row in the same order as the ring. */}
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
             <DonutChart
               data={donutData}
+              size={150}
               centerPrimary={fmtMoney(-expenseCents, displayCcy).replace('-', '')}
             />
+            {donutData.length > 0 && (
+              <ul className="min-w-44 flex-1 space-y-1.5 text-xs">
+                {donutData.map((d) => (
+                  <li key={d.slug} className="flex items-center gap-2">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: sliceColor(d) }}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-ink-700">{d.label}</span>
+                    <span className="font-mono text-ink-700">
+                      {sym}
+                      {d.value.toLocaleString()}
+                    </span>
+                    <span className="w-9 shrink-0 text-right text-ink-500 tabular-nums">
+                      {donutTotal > 0 ? `${Math.round((d.value / donutTotal) * 100)}%` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          {donutData.length > 0 && (
-            <ul className="mt-3 space-y-1 text-xs">
-              {donutData.slice(0, 5).map((d) => (
-                <li key={d.slug} className="flex items-center justify-between">
-                  <CatPill slug={d.slug} label={d.label} size="sm" />
-                  <span className="font-mono text-ink-700">
-                    {sym}
-                    {d.value.toLocaleString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
         </PaperCard>
       </div>
 

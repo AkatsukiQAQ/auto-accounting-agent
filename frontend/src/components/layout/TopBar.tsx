@@ -3,7 +3,7 @@ import { Icon } from '@/components/ui/Icon';
 
 export function TopBar() {
   return (
-    <header className="flex h-14 items-center gap-4 border-b border-cream-200 px-4 md:px-6">
+    <header className="flex h-14 items-center gap-4 border-b border-cream-200 px-4 md:px-6 md:pr-gutter">
       <div className="relative flex-1 max-w-xl">
         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500">
           <Icon name="search" size={14} />

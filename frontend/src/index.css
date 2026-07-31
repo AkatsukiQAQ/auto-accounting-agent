@@ -76,6 +76,14 @@
    * .num (numeric display) — Klee One, locked per design doc styles.css.
    * .serif (page titles)   — Fraunces.
    */
+  /* ── Layout ──
+   * Right-edge page gutter (md+). Wider than the left paddings on purpose:
+   * keeps content clear of browser overlays (e.g. Edge Copilot's floating
+   * chatbot icon docks bottom-right). Referenced as `md:pr-gutter` in
+   * AppShell <main> and TopBar — change it here, both stay aligned.
+   */
+  --spacing-gutter: 4rem;
+
   --font-sans:      "Noto Sans JP", "Geist", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
   --font-hand:      "Kalam", "Indie Flower", "Klee One", cursive;
   --font-hand-body: "Indie Flower", "Kalam", "Klee One", cursive;
