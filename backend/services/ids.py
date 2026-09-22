@@ -38,6 +38,10 @@ def new_budget_id() -> str:
     return _mint("bgt")
 
 
+def new_merchant_alias_id() -> str:
+    return _mint("mal")
+
+
 def new_recurring_rule_id() -> str:
     return _mint("rr")
 

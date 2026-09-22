@@ -15,6 +15,9 @@ from backend.api.routes import (
     categories,
     health,
     imports,
+    merchant_aliases,
+    merchants,
+    normalize,
     settings,
     transactions,
     transfers,
@@ -22,6 +25,7 @@ from backend.api.routes import (
 from backend.db.seeders.accounts import ensure_default_cash_account
 from backend.db.seeders.categories import ensure_system_categories, seed_categories
 from backend.db.session import build_engine, build_session_factory
+from backend.services.normalization.merchants_seed import ensure_seed_merchants
 
 
 def create_app(
@@ -51,6 +55,7 @@ def create_app(
             seed_categories(s)
             ensure_system_categories(s)
             ensure_default_cash_account(s)
+            ensure_seed_merchants(s)
             s.commit()
         yield
         if owns_engine and engine is not None:
@@ -81,6 +86,9 @@ def create_app(
     app.include_router(accounts.router)
     app.include_router(transfers.router)
     app.include_router(categories.router)
+    app.include_router(merchants.router)
+    app.include_router(merchant_aliases.router)
+    app.include_router(normalize.router)
     app.include_router(imports.router)
     app.include_router(settings.router)
 

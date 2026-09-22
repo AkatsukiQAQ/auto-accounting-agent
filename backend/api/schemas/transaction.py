@@ -54,6 +54,10 @@ class TransactionCreate(CamelModel):
     # Plain str so `type: "transfer_out"` reaches the ledger service and gets
     # the spec'd 400 `use_transfers_endpoint` instead of a generic 400.
     type: Optional[str] = None
+    # Populated by import previews (pipeline already normalized); manual
+    # entries omit them and the ledger runs the engine itself.
+    merchant_raw: Optional[str] = None
+    merchant_normalized: Optional[str] = None
     source: Literal["photo", "manual"]
     confidence: Optional[float] = None
     note: Optional[str] = None
@@ -64,7 +68,11 @@ class TransactionUpdate(CamelModel):
     """Partial update. All fields optional; unset keys preserve DB values."""
 
     occurred_at: Optional[datetime] = None
+    # PATCHing `merchant` (or merchantNormalized) is a manual override — the
+    # engine does NOT re-run; PATCHing `merchantRaw` re-runs normalization.
     merchant: Optional[str] = None
+    merchant_raw: Optional[str] = None
+    merchant_normalized: Optional[str] = None
     amount_cents: Optional[int] = None
     currency: Optional[str] = None
     category_id: Optional[str] = None

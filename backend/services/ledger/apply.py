@@ -25,6 +25,7 @@ from backend.services.errors import (
     TransferLegEditError,
     ValidationError,
 )
+from backend.services.normalization import normalize
 
 TRANSFER_TYPES: tuple[str, ...] = ("transfer_out", "transfer_in")
 
@@ -58,6 +59,8 @@ def create(
                 meta={"field": "type", "type": type_},
             )
 
+    _normalize_on_create(session, fields)
+
     if not skip_duplicate_check:
         _duplicate_check(session, fields)
 
@@ -86,6 +89,7 @@ def update(session: Session, transaction_id: str, **patch: Any) -> Transaction:
     old_account_id = existing.account_id
     old_amount = existing.amount_cents
 
+    _normalize_on_update(session, patch)
     row = txn_rows.update_transaction(session, transaction_id, **patch)
 
     if (old_account_id, old_amount) != (row.account_id, row.amount_cents):
@@ -122,6 +126,47 @@ def delete(session: Session, transaction_id: str) -> None:
         account.balance_cents -= leg.amount_cents
         session.delete(leg)
     session.flush()
+
+
+def _normalize_on_create(session: Session, fields: dict[str, Any]) -> None:
+    """Ensure every new row carries the merchant triple.
+
+    Callers that already normalized (the import pipeline) pass
+    `merchant_normalized` through untouched; everything else (manual entry,
+    reconcile, transfer legs, worker) gets the engine run here so aliases
+    apply to manual entries too, and the 48h duplicate check always compares
+    brand-level names. The `merchant` column stays a compat copy of the
+    normalized value (dropped in a future migration).
+    """
+    if fields.get("merchant_normalized") is not None:
+        fields.setdefault("merchant_raw", fields.get("merchant"))
+        fields["merchant"] = fields["merchant_normalized"]
+        return
+    raw = fields.get("merchant_raw") or fields.get("merchant") or ""
+    outcome = normalize(session, raw, count_alias_hits=True)
+    fields["merchant_raw"] = raw
+    fields["merchant_normalized"] = outcome.normalized
+    fields["merchant"] = outcome.normalized
+
+
+def _normalize_on_update(session: Session, patch: dict[str, Any]) -> None:
+    """PATCH semantics (resolves the PHASE_2 vs BACKEND_PHASE_2 discrepancy):
+
+    - `merchant` (or `merchant_normalized`) in the patch = a MANUAL override of
+      the normalized name — the engine must NOT run, or it would clobber the
+      user's edit. The compat `merchant` column stays in sync.
+    - `merchant_raw` alone in the patch = re-run the engine on the new raw.
+    """
+    if "merchant" in patch or "merchant_normalized" in patch:
+        override = patch.get("merchant_normalized") or patch.get("merchant")
+        if override is not None:
+            patch["merchant_normalized"] = override
+            patch["merchant"] = override
+        return
+    if "merchant_raw" in patch and patch["merchant_raw"]:
+        outcome = normalize(session, patch["merchant_raw"], count_alias_hits=True)
+        patch["merchant_normalized"] = outcome.normalized
+        patch["merchant"] = outcome.normalized
 
 
 def _duplicate_check(session: Session, fields: dict[str, Any]) -> None:
