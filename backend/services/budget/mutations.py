@@ -12,6 +12,8 @@ from backend.services.ledger import apply
 from backend.services.transactions import _validate_currency
 from .periods import period_bounds, zone
 
+NON_SPENDING_CATEGORY_IDS = frozenset({"income", "transfer"})
+
 
 def money(value, *, nullable=False):
     if value is None and nullable:
@@ -91,7 +93,7 @@ def delete_plan(session, plan_id):
 
 
 def validate_item(session, category_id, limit_cents, warning_ratio, kind):
-    if category_id == "transfer" or session.get(Category, category_id) is None:
+    if category_id in NON_SPENDING_CATEGORY_IDS or session.get(Category, category_id) is None:
         raise ValidationError("Select an existing spending category")
     money(limit_cents)
     if warning_ratio is None or not Decimal(0) < Decimal(str(warning_ratio)) <= Decimal(1):
@@ -152,7 +154,7 @@ def clone_plan(session, source_plan_id, starts_on, ends_on=None):
 def quick_expense(session, *, amount_cents, category_id, currency, occurred_on, note=None):
     from .summary import profile_context
     money(amount_cents)
-    if amount_cents == 0 or category_id == "transfer":
+    if amount_cents == 0 or category_id in NON_SPENDING_CATEGORY_IDS:
         raise ValidationError("Expense must be positive and use a spending category")
     tz, _, today = profile_context(session)
     if occurred_on > today:
@@ -166,7 +168,7 @@ def set_category_spend_total(session, *, plan_id, category_id, total_cents, note
     from .summary import profile_context, spend_by_category
     plan = get_plan(session, plan_id)
     money(total_cents)
-    if category_id == "transfer" or session.get(Category, category_id) is None:
+    if category_id in NON_SPENDING_CATEGORY_IDS or session.get(Category, category_id) is None:
         raise ValidationError("Select an existing spending category")
     tz, _, today = profile_context(session)
     today = as_of or today

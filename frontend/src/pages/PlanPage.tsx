@@ -9,7 +9,7 @@ import { PeriodSelector } from '@/components/budget/PeriodSelector';
 import { useBudgetPeriod, useBudgetPlans, useBudgetSummary, useBudgetWrite } from '@/hooks/useBudgets';
 import { useCategories } from '@/hooks/useCategories';
 import { useSettings } from '@/hooks/useSettings';
-import { parseMoney, periodBounds, shiftPeriod, type BudgetItem, type BudgetKind, type BudgetPlan } from '@/lib/budget';
+import { isSpendingCategory, parseMoney, periodBounds, shiftPeriod, type BudgetItem, type BudgetKind, type BudgetPlan } from '@/lib/budget';
 import { fmtMoney } from '@/lib/formatters';
 
 export function PlanPage() {
@@ -102,7 +102,7 @@ function Allocations({ plan }: { plan: BudgetPlan }) {
   const [category, setCategory] = useState('');
   const [error, setError] = useState('');
   const write = useBudgetWrite();
-  const available = (cats.data ?? []).filter(c => c.id !== 'transfer' && !plan.items.some(i => i.categoryId === c.id));
+  const available = (cats.data ?? []).filter(c => isSpendingCategory(c) && !plan.items.some(i => i.categoryId === c.id));
   async function add(e: FormEvent) {
     e.preventDefault(); setError('');
     try { await write.mutateAsync({ path: `/api/budget-plans/${plan.id}/items`, body: { categoryId: category, limitCents: 0 } }); setCategory(''); }

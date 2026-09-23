@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, inputClass } from '@/components/ui/Field';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgetWrite } from '@/hooks/useBudgets';
-import { parseMoney, todayInZone } from '@/lib/budget';
+import { isSpendingCategory, parseMoney, todayInZone } from '@/lib/budget';
 
 export function SpendForm({ currency, timezone, planId, categoryId: initialCategory, onDone }: {
   currency: string; timezone?: string; planId?: string; categoryId?: string; onDone: () => void;
@@ -32,7 +32,7 @@ export function SpendForm({ currency, timezone, planId, categoryId: initialCateg
     <Field label={`${planId ? 'Category total' : 'Amount'} (${currency})`}><input autoFocus required className={inputClass}
       inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} /></Field>
     <Field label="Category"><select className={inputClass} value={categoryId} onChange={e => setCategory(e.target.value)}>
-      {(cats.data ?? []).filter(c => c.id !== 'transfer').map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+      {(cats.data ?? []).filter(isSpendingCategory).map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
     </select></Field>
     {!planId && <Field label="Date"><input type="date" required max={todayInZone(timezone)} className={inputClass} value={date} onChange={e => setDate(e.target.value)} /></Field>}
     <Field label="Note (optional)"><input className={inputClass} value={note} onChange={e => setNote(e.target.value)} /></Field>

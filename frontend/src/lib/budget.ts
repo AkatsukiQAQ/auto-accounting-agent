@@ -22,6 +22,12 @@ export interface BudgetSummary {
   unbudgeted: { categoryId: string; spentCents: number }[];
 }
 
+const NON_SPENDING_CATEGORY_IDS = new Set(['income', 'transfer']);
+
+export function isSpendingCategory(category: { id: string }): boolean {
+  return !NON_SPENDING_CATEGORY_IDS.has(category.id);
+}
+
 export function todayInZone(timezone = 'Asia/Tokyo'): string {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
   const value = (type: string) => parts.find(p => p.type === type)?.value;

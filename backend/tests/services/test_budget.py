@@ -114,6 +114,19 @@ def test_future_and_validation(session):
         m.quick_expense(session, amount_cents=0, category_id="food", currency="JPY", occurred_on=date(2026,1,1))
 
 
+@pytest.mark.parametrize("category_id", ["income", "transfer"])
+def test_budget_writes_reject_non_spending_categories(session, category_id):
+    p = m.create_plan(session, period_type="month", starts_on=date(2026,1,1), currency="JPY")
+    with pytest.raises(ValidationError):
+        m.add_item(session, p.id, category_id=category_id, limit_cents=100)
+    with pytest.raises(ValidationError):
+        m.quick_expense(session, amount_cents=100, category_id=category_id, currency="JPY",
+                        occurred_on=date(2026,1,1))
+    with pytest.raises(ValidationError):
+        m.set_category_spend_total(session, plan_id=p.id, category_id=category_id,
+                                   total_cents=100, as_of=date(2026,1,1))
+
+
 def test_budget_protects_category_and_delete_cascades(session):
     from backend.db.models import BudgetItem
     p = plan(session)

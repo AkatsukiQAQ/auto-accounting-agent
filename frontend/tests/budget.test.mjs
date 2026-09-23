@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseMoney, periodBounds, shiftPeriod, todayInZone } from '../src/lib/budget.ts';
+import { isSpendingCategory, parseMoney, periodBounds, shiftPeriod, todayInZone } from '../src/lib/budget.ts';
 
 test('weeks span Monday to Sunday across year boundaries', () => {
   assert.deepEqual(periodBounds('week', '2026-01-01'), { start: '2025-12-29', end: '2026-01-04' });
@@ -23,4 +23,10 @@ test('money conversion preserves cents and the existing JPY x100 convention', ()
 test('today uses the configured zone and date-only format', () => {
   assert.match(todayInZone('Asia/Tokyo'), /^\d{4}-\d{2}-\d{2}$/);
   assert.match(todayInZone('America/New_York'), /^\d{4}-\d{2}-\d{2}$/);
+});
+test('budget entry only offers spending categories', () => {
+  assert.equal(isSpendingCategory({ id: 'food' }), true);
+  assert.equal(isSpendingCategory({ id: 'other' }), true);
+  assert.equal(isSpendingCategory({ id: 'income' }), false);
+  assert.equal(isSpendingCategory({ id: 'transfer' }), false);
 });
