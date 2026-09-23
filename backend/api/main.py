@@ -12,6 +12,7 @@ from backend.api import errors as api_errors
 from backend.api.config import AppConfig
 from backend.api.routes import (
     accounts,
+    budgets,
     categories,
     health,
     imports,
@@ -82,6 +83,7 @@ def create_app(
     )
 
     app.include_router(health.router)
+    app.include_router(budgets.router)
     app.include_router(transactions.router)
     app.include_router(accounts.router)
     app.include_router(transfers.router)

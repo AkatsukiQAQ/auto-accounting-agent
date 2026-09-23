@@ -142,6 +142,9 @@ def _normalize_on_create(session: Session, fields: dict[str, Any]) -> None:
         fields.setdefault("merchant_raw", fields.get("merchant"))
         fields["merchant"] = fields["merchant_normalized"]
         return
+    if fields.get("merchant_raw") is None and fields.get("merchant") is None:
+        fields["merchant"] = None
+        return
     raw = fields.get("merchant_raw") or fields.get("merchant") or ""
     outcome = normalize(session, raw, count_alias_hits=True)
     fields["merchant_raw"] = raw
@@ -162,6 +165,8 @@ def _normalize_on_update(session: Session, patch: dict[str, Any]) -> None:
         if override is not None:
             patch["merchant_normalized"] = override
             patch["merchant"] = override
+        elif "merchant" in patch and patch["merchant"] is None:
+            patch["merchant_normalized"] = None
         return
     if "merchant_raw" in patch and patch["merchant_raw"]:
         outcome = normalize(session, patch["merchant_raw"], count_alias_hits=True)

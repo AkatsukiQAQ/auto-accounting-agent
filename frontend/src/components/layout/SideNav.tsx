@@ -15,13 +15,9 @@ interface Item {
 
 const ITEMS: Item[] = [
   { to: '/', label: 'Dashboard', icon: 'home' },
+  { to: '/plan', label: 'Plan', icon: 'check' },
   { to: '/records', label: 'Records', icon: 'list' },
   { to: '/import', label: 'Import', icon: 'upload' },
-  // Phase 2 entries — visible but disabled so the roadmap is visually present.
-  { to: '/review', label: 'Review', icon: 'alert', upcoming: true },
-  { to: '/accounts', label: 'Accounts', icon: 'tag', upcoming: true },
-  { to: '/recurring', label: 'Recurring', icon: 'list', upcoming: true },
-  { to: '/budget', label: 'Budget & Goals', icon: 'check', upcoming: true },
   { to: '/categories', label: 'Categories', icon: 'tag' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
 ];

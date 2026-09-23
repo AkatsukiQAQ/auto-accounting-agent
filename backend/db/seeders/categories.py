@@ -169,7 +169,9 @@ def seed_categories(session: Session, *, force: bool = False) -> int:
     """
     existing_ids: set[str] = set(session.scalars(select(Category.id)).all())
 
-    if existing_ids and not force:
+    # Migration 0004 inserts `transfer` even into a brand-new database. That
+    # migration-only row must not suppress first-boot category initialization.
+    if existing_ids and existing_ids != {"transfer"} and not force:
         return 0
 
     rows = _build_rows()

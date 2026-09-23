@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
+import { PlanPage } from '@/pages/PlanPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { RecordsPage } from '@/pages/RecordsPage';
 import { ImportPage } from '@/pages/ImportPage';
@@ -12,6 +13,7 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { index: true, element: <DashboardPage />, handle: { title: 'Home' } },
+      { path: 'plan', element: <PlanPage />, handle: { title: 'Plan' } },
       { path: 'records', element: <RecordsPage />, handle: { title: 'Records' } },
       { path: 'import', element: <ImportPage />, handle: { title: 'Import' } },
       { path: 'categories', element: <CategoriesPage />, handle: { title: 'Categories' } },

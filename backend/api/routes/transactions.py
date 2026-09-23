@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query, status
@@ -39,7 +39,7 @@ def _to_out(t: Transaction) -> TransactionOut:
     )
     return TransactionOut(
         id=t.id,
-        occurred_at=t.occurred_at,
+        occurred_at=t.occurred_at.replace(tzinfo=timezone.utc) if t.occurred_at.tzinfo is None else t.occurred_at,
         created_at=t.created_at,
         merchant=t.merchant,
         amount_cents=t.amount_cents,
@@ -51,6 +51,7 @@ def _to_out(t: Transaction) -> TransactionOut:
         recurring_rule_id=t.recurring_rule_id,
         merchant_raw=t.merchant_raw,
         merchant_normalized=t.merchant_normalized,
+        granularity=t.granularity,
         source=t.source,  # type: ignore[arg-type]
         confidence=t.confidence,
         note=t.note,

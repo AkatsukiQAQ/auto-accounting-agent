@@ -15,7 +15,7 @@ import base64
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Iterable, Optional
 
 from sqlalchemy import and_, func, or_, select
@@ -45,11 +45,12 @@ def create_transaction(
     session: Session,
     *,
     occurred_at: datetime,
-    merchant: str,
+    merchant: str | None,
     amount_cents: int,
     currency: str,
     category_id: str,
     source: str,
+    granularity: str = "transaction",
     account_id: str | None = None,
     type: str = "normal",
     transfer_group_id: str | None = None,
@@ -70,6 +71,8 @@ def create_transaction(
     _validate_currency(currency)
     _validate_amount(amount_cents)
     _validate_source(source)
+    if granularity not in ("transaction", "quick", "aggregate_adjustment"):
+        raise ValidationError("Invalid granularity")
     _validate_type(type)
     _ensure_category_exists(session, category_id)
     account_id = account_id or DEFAULT_CASH_ACCOUNT_ID
@@ -77,12 +80,13 @@ def create_transaction(
 
     txn = Transaction(
         id=new_transaction_id(),
-        occurred_at=occurred_at,
+        occurred_at=_utc_datetime(occurred_at),
         merchant=merchant,
         amount_cents=amount_cents,
         currency=currency,
         category_id=category_id,
         source=source,
+        granularity=granularity,
         account_id=account_id,
         type=type,
         transfer_group_id=transfer_group_id,
@@ -144,6 +148,8 @@ def update_transaction(
 
     if "currency" in updates:
         _validate_currency(updates["currency"])
+    if "occurred_at" in updates and updates["occurred_at"] is not None:
+        updates["occurred_at"] = _utc_datetime(updates["occurred_at"])
     if "amount_cents" in updates:
         _validate_amount(updates["amount_cents"])
     if "source" in updates:
@@ -242,6 +248,11 @@ def _validate_currency(currency: str) -> None:
         )
 
 
+def _utc_datetime(value: datetime) -> datetime:
+    """SQLite drops offsets; normalize aware inputs before storage. Naive is UTC."""
+    return value.astimezone(timezone.utc).replace(tzinfo=None) if value.tzinfo else value
+
+
 def _validate_amount(amount_cents: int) -> None:
     if not isinstance(amount_cents, int) or isinstance(amount_cents, bool):
         raise ValidationError("amountCents must be an integer", meta={"field": "amountCents"})
@@ -250,9 +261,9 @@ def _validate_amount(amount_cents: int) -> None:
 
 
 def _validate_source(source: str) -> None:
-    if source not in ("photo", "manual"):
+    if source not in ("photo", "manual", "receipt", "screenshot", "csv", "slash", "agent", "adjustment"):
         raise ValidationError(
-            f"source must be 'photo' or 'manual', got {source!r}",
+            f"unsupported transaction source: {source!r}",
             meta={"field": "source"},
         )
 

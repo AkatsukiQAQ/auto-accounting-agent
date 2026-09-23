@@ -14,7 +14,7 @@ from typing import Any, Iterable
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from backend.db.models import Category, Transaction
+from backend.db.models import BudgetItem, Category, Transaction
 from backend.db.seeders.categories import SYSTEM_CATEGORY_SLUGS
 from backend.services.errors import (
     CategoryInUseError,
@@ -124,6 +124,9 @@ def delete_category(session: Session, category_id: str) -> None:
             f"category {cat.id!r} is referenced by {txn_count} transaction(s)",
             meta={"id": cat.id, "transactionCount": int(txn_count)},
         )
+
+    if session.scalar(select(BudgetItem.id).where(BudgetItem.category_id == cat.id).limit(1)):
+        raise CategoryInUseError("Category is referenced by a budget item", meta={"id": cat.id})
 
     session.delete(cat)
     session.flush()

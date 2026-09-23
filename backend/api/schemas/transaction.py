@@ -21,10 +21,11 @@ class RawOut(CamelModel):
 
 
 class TransactionOut(CamelModel):
+    granularity: str = "transaction"
     id: str
     occurred_at: datetime
     created_at: datetime
-    merchant: str
+    merchant: Optional[str]
     amount_cents: int
     currency: str
     category_id: str
@@ -36,7 +37,7 @@ class TransactionOut(CamelModel):
     recurring_rule_id: Optional[str] = None
     merchant_raw: Optional[str] = None
     merchant_normalized: Optional[str] = None
-    source: Literal["photo", "manual"]
+    source: Literal["photo", "manual", "receipt", "screenshot", "csv", "slash", "agent", "adjustment"]
     confidence: Optional[float] = None
     note: Optional[str] = None
     raw: Optional[RawOut] = None
@@ -44,7 +45,7 @@ class TransactionOut(CamelModel):
 
 class TransactionCreate(CamelModel):
     occurred_at: datetime
-    merchant: str
+    merchant: Optional[str] = None
     amount_cents: int
     currency: str
     category_id: str
@@ -58,7 +59,7 @@ class TransactionCreate(CamelModel):
     # entries omit them and the ledger runs the engine itself.
     merchant_raw: Optional[str] = None
     merchant_normalized: Optional[str] = None
-    source: Literal["photo", "manual"]
+    source: Literal["photo", "manual", "receipt", "screenshot", "csv", "slash", "agent", "adjustment"]
     confidence: Optional[float] = None
     note: Optional[str] = None
     raw: Optional[RawIn] = None
@@ -77,7 +78,7 @@ class TransactionUpdate(CamelModel):
     currency: Optional[str] = None
     category_id: Optional[str] = None
     account_id: Optional[str] = None
-    source: Optional[Literal["photo", "manual"]] = None
+    source: Optional[Literal["photo", "manual", "receipt", "screenshot", "csv", "slash", "agent", "adjustment"]] = None
     confidence: Optional[float] = None
     note: Optional[str] = None
     raw: Optional[RawIn] = None

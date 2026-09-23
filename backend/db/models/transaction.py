@@ -27,7 +27,7 @@ class Transaction(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    merchant: Mapped[str] = mapped_column(String, nullable=False)
+    merchant: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     amount_cents: Mapped[int] = mapped_column(BigInteger, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     category_id: Mapped[str] = mapped_column(
@@ -47,6 +47,7 @@ class Transaction(Base):
     merchant_raw: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     merchant_normalized: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     source: Mapped[str] = mapped_column(String, nullable=False)  # "photo" | "manual"
+    granularity: Mapped[str] = mapped_column(String, nullable=False, default="transaction", server_default="transaction")
     confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     raw_image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
