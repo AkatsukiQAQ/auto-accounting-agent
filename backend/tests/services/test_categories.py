@@ -67,8 +67,9 @@ def test_create_rejects_duplicate_id(session: Session) -> None:
 
 
 def test_update_partial_fields(session: Session) -> None:
-    cat = update_category(session, "food", label="Groceries")
+    cat = update_category(session, "food", label="Groceries", icon="🥖")
     assert cat.label == "Groceries"
+    assert cat.icon == "🥖"
     assert cat.keywords  # still intact
 
 

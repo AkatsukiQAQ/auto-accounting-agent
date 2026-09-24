@@ -88,8 +88,9 @@ def summary(plan_id: str, session: Session = Depends(get_session), as_of: date |
 def current(session: Session = Depends(get_session), period_type: PeriodType = Query("month", alias="periodType"),
             on_date: date | None = Query(None, alias="onDate"), currency: str | None = None):
     _, default_currency, today = profile_context(session)
-    plan = get_active_plan(session, period_type, on_date or today, currency or default_currency)
-    return Data(data=SummaryOut.model_validate(get_plan_summary(session, plan.id)) if plan else None)
+    effective_on_date = on_date or today
+    plan = get_active_plan(session, period_type, effective_on_date, currency or default_currency)
+    return Data(data=SummaryOut.model_validate(get_plan_summary(session, plan.id, effective_on_date)) if plan else None)
 
 
 @router.post("/transactions/quick", response_model=Data[TransactionOut], status_code=201)

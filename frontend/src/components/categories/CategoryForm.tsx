@@ -8,6 +8,8 @@ interface Props {
   initial?: Category;
   onSubmit: (input: CategoryCreate | CategoryUpdate) => Promise<unknown>;
   onCancel: () => void;
+  onUploadIcon?: (file: File) => Promise<Category>;
+  uploadingIcon?: boolean;
 }
 
 const SLUG_RE = /^[a-z][a-z0-9_]{0,31}$/;
@@ -24,13 +26,16 @@ const SUGGESTED_COLORS: Array<[string, string]> = [
   ['#EEDFC8', '#9E6A37'],
   ['#E9E4D8', '#8B7E6C'],
 ];
+const ICON_CHOICES = ['🍜', '🚃', '🛍️', '🧾', '🎮', '✚', '¥', '⌂', '✦', '☕'];
 
-export function CategoryForm({ initial, onSubmit, onCancel }: Props) {
+export function CategoryForm({ initial, onSubmit, onCancel, onUploadIcon, uploadingIcon = false }: Props) {
   const editing = !!initial;
   const [id, setId] = useState(initial?.id ?? '');
   const [label, setLabel] = useState(initial?.label ?? '');
   const [colorBg, setColorBg] = useState(initial?.colorBg ?? '#E9E4D8');
   const [colorDot, setColorDot] = useState(initial?.colorDot ?? '#8B7E6C');
+  const [icon, setIcon] = useState(initial?.icon ?? '✦');
+  const [iconImageUrl, setIconImageUrl] = useState(initial?.iconImageUrl ?? null);
   const [keywordsText, setKeywordsText] = useState(
     (initial?.keywords ?? []).join(', '),
   );
@@ -66,6 +71,7 @@ export function CategoryForm({ initial, onSubmit, onCancel }: Props) {
           label,
           colorBg,
           colorDot,
+          icon,
           keywords,
         } as CategoryUpdate);
       } else {
@@ -74,6 +80,7 @@ export function CategoryForm({ initial, onSubmit, onCancel }: Props) {
           label,
           colorBg,
           colorDot,
+          icon,
           keywords,
           autoAssign: true,
         } as CategoryCreate);
@@ -117,6 +124,16 @@ export function CategoryForm({ initial, onSubmit, onCancel }: Props) {
           className={inputCls}
           required
         />
+      </Field>
+
+      <Field label="Icon" hint="Choose a symbol, or upload a small PNG, JPEG, or WebP after creating the category.">
+        <div className="flex flex-wrap gap-1.5">
+          {ICON_CHOICES.map(choice => <button key={choice} type="button" onClick={() => setIcon(choice)}
+            className={`grid size-9 place-items-center rounded-lg border text-base ${icon === choice ? 'border-ink-900 bg-cream-200' : 'border-ink-200 bg-cream-50'}`}>{choice}</button>)}
+        </div>
+        {editing && onUploadIcon && <div className="mt-3 flex items-center gap-3"><label className="cursor-pointer text-xs underline"><input className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" disabled={uploadingIcon}
+          onChange={async e => { const file = e.target.files?.[0]; if (!file) return; try { const category = await onUploadIcon(file); setIconImageUrl(category.iconImageUrl); } catch (err) { setError(err instanceof Error ? err.message : 'Could not upload icon.'); } }} />{uploadingIcon ? 'Uploading…' : 'Upload custom image'}</label>
+          {iconImageUrl && <img src={iconImageUrl} alt="Current category icon" className="size-8 rounded-md object-cover" />}</div>}
       </Field>
 
       <Field label="Colors">

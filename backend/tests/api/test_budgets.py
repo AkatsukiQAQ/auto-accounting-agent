@@ -36,6 +36,16 @@ def test_budget_validation(client):
         assert res.status_code == 400, res.text
 
 
+def test_current_summary_respects_requested_as_of_date(client):
+    p = client.post('/api/budget-plans', json={"periodType":"month", "startsOn":"2026-01-01", "currency":"JPY"}).json()['data']
+    transaction = client.post('/api/transactions', json={"occurredAt":"2026-01-20T12:00:00Z", "merchant":"Shop", "amountCents":-100,
+        "currency":"JPY", "categoryId":"food", "source":"manual"})
+    assert transaction.status_code == 201
+    summary = client.get('/api/budget-summary/current?periodType=month&onDate=2026-01-10').json()['data']
+    assert summary['planId'] == p['id']
+    assert summary['actualSpendCents'] == 0
+
+
 def test_receipt_import_contributes_to_budget(client, fake_llm):
     from backend.tests.api.test_imports import _mk_llm_responses
     from backend.tests.api.conftest import VALID_PNG_BYTES

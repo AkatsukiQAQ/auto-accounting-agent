@@ -37,7 +37,7 @@ export function PlanPage() {
     catch (e) { setError(e instanceof Error ? e.message : 'Could not duplicate plan.'); }
   }
   return <div className="space-y-5">
-    <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="hand-body text-4xl">A plan with room to live.</h1>
+    <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="hand-body text-[40px] leading-tight">A plan with room to live.</h1>
       <p className="mt-2 text-sm text-ink-500">Allocate your {currency} spending. Keep a buffer if you like.</p></div>
       <Link className="text-sm underline" to={`/${period.search}`}>View dashboard →</Link></div>
     <PeriodSelector {...period} onChange={period.change} />

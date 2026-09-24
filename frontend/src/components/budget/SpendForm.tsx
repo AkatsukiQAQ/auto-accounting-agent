@@ -20,6 +20,7 @@ export function SpendForm({ currency, timezone, planId, categoryId: initialCateg
     e.preventDefault(); setError('');
     try {
       const cents = parseMoney(amount);
+      if (cents <= 0) throw new Error('Enter an amount greater than zero.');
       await write.mutateAsync({ path: planId ? '/api/budget-spend/set-total' : '/api/transactions/quick',
         body: planId ? { planId, categoryId, totalCents: cents, note: note || null }
           : { amountCents: cents, categoryId, occurredOn: date, currency, note: note || null } });

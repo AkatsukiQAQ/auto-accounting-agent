@@ -234,6 +234,7 @@ storage/
 mita.db
 mita.db-wal
 mita.db-shm
+.backups/
 
 # Local budget test databases, screenshots and pytest temporary directories
-.test-tmp-budget*/
+.test-tmp-*/

@@ -32,7 +32,10 @@ def spend_by_category(session, start, end, currency, timezone_name):
     rows = session.execute(select(Transaction.category_id, func.sum(amount)).where(
         Transaction.occurred_at >= low, Transaction.occurred_at < high,
         Transaction.currency == currency, Transaction.type.not_in(("transfer_out", "transfer_in")),
-        Transaction.category_id != "transfer").group_by(Transaction.category_id))
+        # A bad historical/manual sign on an income row must not turn income
+        # into budget spend. Budget mutations already reject these categories;
+        # keep imported and legacy rows equally safe.
+        Transaction.category_id.not_in(("income", "transfer"))).group_by(Transaction.category_id))
     return {category: int(total) for category, total in rows}
 
 

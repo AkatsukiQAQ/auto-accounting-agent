@@ -62,6 +62,16 @@ def test_patch_updates_label(client: TestClient) -> None:
     assert r.json()["data"]["label"] == "Groceries"
 
 
+def test_category_icon_symbol_and_custom_image(client: TestClient) -> None:
+    assert client.patch("/api/categories/food", json={"icon": "🥖"}).json()["data"]["icon"] == "🥖"
+    from backend.tests.api.conftest import VALID_PNG_BYTES
+    response = client.post("/api/categories/food/icon-image", files={"image": ("food.png", VALID_PNG_BYTES, "image/png")})
+    assert response.status_code == 200, response.text
+    icon_url = response.json()["data"]["iconImageUrl"]
+    assert icon_url.startswith("/media/category-icons/")
+    assert client.get(icon_url).status_code == 200
+
+
 def test_delete_system_category_returns_409(client: TestClient) -> None:
     r = client.delete("/api/categories/other")
     assert r.status_code == 409

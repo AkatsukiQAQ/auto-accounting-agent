@@ -8,6 +8,8 @@ export interface Category {
   label: string;
   colorBg: string;
   colorDot: string;
+  icon: string | null;
+  iconImageUrl: string | null;
   keywords: string[];
   autoAssign: boolean;
   sortOrder: number;

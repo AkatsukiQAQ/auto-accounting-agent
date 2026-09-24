@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchJson } from '@/lib/api';
+import { fetchJson, fetchMultipart } from '@/lib/api';
 import type { Category, CategoryCreate, CategoryUpdate } from '@/lib/types';
 
 const KEY = ['categories'] as const;
@@ -40,6 +40,18 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: (id: string) =>
       fetchJson<{ ok: boolean }>(`/api/categories/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useUploadCategoryIcon() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => {
+      const form = new FormData();
+      form.append('image', file);
+      return fetchMultipart<Category>(`/api/categories/${id}/icon-image`, form);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }

@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { fetchJson, qs } from '@/lib/api';
-import { periodBounds, todayInZone, type BudgetPlan, type BudgetSummary, type PeriodType } from '@/lib/budget';
+import { isValidDateOnly, periodBounds, todayInZone, type BudgetPlan, type BudgetSummary, type PeriodType } from '@/lib/budget';
 
 export function useBudgetPeriod(timezone?: string) {
   const [params, setParams] = useSearchParams();
   const type: PeriodType = params.get('period') === 'week' ? 'week' : 'month';
   const candidate = params.get('date');
-  const on = candidate && /^\d{4}-\d{2}-\d{2}$/.test(candidate) && !Number.isNaN(Date.parse(candidate)) ? candidate : todayInZone(timezone);
+  const on = isValidDateOnly(candidate) ? candidate : todayInZone(timezone);
   const { start, end } = periodBounds(type, on);
   const today = todayInZone(timezone);
   return { type, on, start, end, switchOn: start <= today && today <= end ? today : on, search: `?period=${type}&date=${start}`,

@@ -124,6 +124,7 @@ body {
 .hand-body  { font-family: var(--font-hand-body), cursive; font-weight: 400; }
 .serif      { font-family: var(--font-serif), serif; }
 .num        { font-family: var(--font-num), cursive; font-variant-numeric: tabular-nums; letter-spacing: 0.2px; }
+html[lang="ja"] .hand-body, html[lang="ja"] .num { font-family: "Klee One", "Noto Sans JP", sans-serif; }
 
 /* Paper card with warm brown shadow — matches prototype's .card-paper. */
 .card-paper {

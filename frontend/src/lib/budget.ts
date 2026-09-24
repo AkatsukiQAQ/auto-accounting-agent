@@ -34,6 +34,11 @@ export function todayInZone(timezone = 'Asia/Tokyo'): string {
   return `${value('year')}-${value('month')}-${value('day')}`;
 }
 
+export function isValidDateOnly(value: string | null): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  return new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+}
+
 // Date-only navigation uses UTC to avoid browser timezone and DST drift.
 export function periodBounds(type: PeriodType, on: string): { start: string; end: string } {
   const d = new Date(`${on}T00:00:00Z`);

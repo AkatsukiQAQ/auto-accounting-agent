@@ -6,8 +6,11 @@ import { RecordsPage } from '@/pages/RecordsPage';
 import { ImportPage } from '@/pages/ImportPage';
 import { CategoriesPage } from '@/pages/CategoriesPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { ChatPage } from '@/pages/ChatPage';
 
 export const router = createBrowserRouter([
+  { path: '/chat', element: <ChatPage /> },
+  { path: '/chat/:sessionId', element: <ChatPage /> },
   {
     path: '/',
     element: <AppShell />,

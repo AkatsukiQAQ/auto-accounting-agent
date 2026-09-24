@@ -49,15 +49,16 @@ def plan(session):
     return p
 
 
-def txn(session, amount=-120000, currency="JPY", when=datetime(2026,1,10), **kw):
+def txn(session, amount=-120000, currency="JPY", when=datetime(2026,1,10), category_id="food", **kw):
     return apply.create(session, merchant="Receipt", occurred_at=when, amount_cents=amount, currency=currency,
-                        category_id="food", source="photo", **kw)
+                        category_id=category_id, source="photo", **kw)
 
 
 def test_aggregation_income_currency_boundaries_and_zero(session):
     p = plan(session)
     txn(session)
     txn(session, amount=900000)
+    txn(session, amount=-700000, category_id="income")
     txn(session, currency="USD")
     txn(session, when=datetime(2025,12,31,14,59,59))
     txn(session, when=datetime(2026,1,31,15))
