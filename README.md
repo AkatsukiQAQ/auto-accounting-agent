@@ -1,12 +1,14 @@
 <div align="center">
 
+<img src="docs/assets/finance_banner.png" alt="Mita Finance — your co-pilot for smarter spending" width="100%">
+
 # Auto-Accounting Agent
 
 ![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)
-![Phase](https://img.shields.io/badge/phase-1%20done-success)
-![Tests](https://img.shields.io/badge/backend%20tests-168%20passing-success)
+![Phase](https://img.shields.io/badge/phase-V2%20Agent%20Core-success)
+![Tests](https://img.shields.io/badge/backend%20tests-319%20passing-success)
 
-**A personal-finance app that turns a screenshot of your payment app into structured ledger entries.**
+**A budget-first personal finance app: plan your week or month, track spending, and see what remains.**
 
 </div>
 
@@ -29,7 +31,7 @@
 
 ## Introduction <a name="introduction"></a>
 
-Manual bookkeeping is tedious — most accounting apps want you to type every coffee, every taxi, every line item. **Mita Finance** flips it: snap a screenshot of your PayPay / Alipay / WeChat Pay / receipt, drop it on the app, and the OCR + classification pipeline produces draft transactions you can confirm in one click.
+MITA Finance helps you compare planned, spent and remaining money across weekly and monthly budgets. Quick expenses and category-total adjustments support imperfect tracking, while receipt imports remain useful supporting evidence.
 
 The pipeline is deterministic three stages — OCR → parse → classify — running on `gpt-5-nano` via the OpenAI Responses API. A regex layer short-circuits common merchants so most receipts never hit the LLM for classification. Multi-receipt screenshots (typical for monthly account history) produce one draft per receipt; a "quick-import" mode auto-saves high-confidence drafts and only asks you to confirm the ambiguous ones.
 
@@ -37,18 +39,22 @@ The pipeline is deterministic three stages — OCR → parse → classify — ru
 
 ## Status <a name="status"></a>
 
-Phase 1 is **complete and runnable end-to-end** — backend, frontend, real OpenAI smoke-tested on multi-receipt PayPay screenshots.
+V2 Phase 1 **Budget Core** and the first V2 Phase 2 **Agent Core** milestones are implemented. Start on Dashboard, select Week or Month, create a plan at `/plan`, or open **Chat** to query and control the same deterministic budget services. Records, receipt Import, Categories and Settings remain available.
 
-| Layer | What's there | Tests |
-|---|---|---|
-| `backend/core/` | Pure pipeline functions (OCR / parse / classify), framework-free | 62 |
-| `backend/db/` | SQLAlchemy models + Alembic + idempotent seeder | 8 |
-| `backend/services/` | Pipeline orchestrator + CRUD + settings | 58 |
-| `backend/api/` | FastAPI app, 15 endpoints, camelCase DTOs | 40 |
-| `frontend/` | Vite + React 19 + TS + Tailwind 4, 5 screens, TanStack Query | — |
-| **Total** | | **168 backend tests passing** |
+- Budget calculations, status, projections and category-total corrections run in deterministic Python/SQL services, without an LLM.
+- Plan cloning copies allocations and targets. Weekly and monthly plans coexist; currency totals never mix.
+- Records labels aggregate adjustments explicitly. A later import adds to existing spending; reconciliation is manual.
+- Existing account/transfer infrastructure remains compatible but is not extended or promoted in navigation.
+- Chat persists sessions and structured actions, supports deterministic slash commands, and requires explicit confirmation for natural-language writes.
+- The planning agent can read four completed weeks, propose a complete next-week budget, let the user edit it, and atomically Apply/Cancel/Undo it.
 
-The frontend ships the prototype's "warm cream paper" design system (Kalam + Indie Flower handwritten fonts, terracotta/olive-tone semantics, paper-bg radial gradients) — see [`design/screenshots/dashboard-a.png`](./design/screenshots/dashboard-a.png) for the reference.
+See [Budget Core behavior and API](design/V2_PHASE_1_BUDGET_CORE.md), [product specification](design/V2_PRODUCT.md) and [development log](docs/dev_log/2026-09-22-budget-core.md). Historical V1 plans are snapshotted in [design/archive/v1](design/archive/v1/README.md).
+
+Before running: `uv sync`, then `uv run alembic upgrade head`. This applies the forward migrations through `0009_chat_session_titles`; no database reset is required. Back up an existing local database before applying migrations.
+
+Validation: `uv run pytest`, and in `frontend/`: `npm test`, `npm run build`. Frontend unit tests require Node 22.6+ for TypeScript stripping. Whole-repository `npm run lint` currently reports pre-existing errors in DonutChart and ImportPage; changed Budget Core files pass targeted lint.
+
+The warm-paper design tokens, PaperCard, Button, CatPill, navigation shell and formatters are retained.
 
 <!-- --- -->
 
@@ -68,7 +74,7 @@ frontend/
     lib/         ─ fetch wrapper, types, formatters
     hooks/       ─ TanStack Query bindings per resource
     components/  ─ ui primitives, layout, charts, import flow, transaction form
-    pages/       ─ Dashboard / Records / Import / Categories / Settings
+    pages/       ─ Dashboard / Chat / Plan / Records / Import / Categories / Settings
     router.tsx   ─ react-router-dom v7 routes
   index.html
 
@@ -110,7 +116,7 @@ cp .env.example .env
 
 **4. Run tests**
 ```bash
-make test           # all 168 backend tests should pass
+make test           # all backend tests should pass
 ```
 
 ### Run the API only <a name="api_only"></a>
@@ -144,7 +150,7 @@ npm install
 npm run dev                # :5173
 ```
 
-Open `http://localhost:5173`. Five screens: Dashboard / Records / Import / Categories / Settings.
+Open `http://localhost:5173`. Six screens: Dashboard / Plan / Records / Import / Categories / Settings.
 
 If you skipped `make seed-api-key`, set the OpenAI key inside the app at **Settings → API Keys** before using photo import.
 
@@ -162,17 +168,60 @@ If you skipped `make seed-api-key`, set the OpenAI key inside the app at **Setti
 
 <!-- --- -->
 
+## Budget Chat — V2 Phase 2 Agent Core
+
+Run `uv run alembic upgrade head`, then open **Chat** from the left navigation. Chat sessions,
+messages and structured actions persist in SQLite. Natural-language budget changes show
+an **Apply / Edit / Cancel** card; only Apply writes through the existing budget/ledger services.
+The Dashboard and Records caches refresh after execution. Read questions use typed
+deterministic services; Chat does not own financial arithmetic.
+
+Configure the existing **Settings → API Keys → OpenAI** key for natural-language Chat.
+`AGENT_MODEL` selects its model independently of receipt import's `LLM_MODEL`.
+No key is needed for these deterministic commands:
+
+```text
+/spend 1800 food
+/income 300000 salary
+/budget food 12000 next-week
+/set-spent food 8500 month
+/summary month
+/plan next-week
+/help
+/undo
+```
+
+Amounts above are major currency units in the profile currency. Use exact category IDs
+or labels (quote multi-word labels); substitute `dining` if that category exists.
+`/income` records actual income. `/undo` supports entries, adjustments, ordinary plan edits,
+and the complete next-week planning proposal, with conflict checks.
+After an uncertain connection failure, refresh the chat before resending a slash write.
+
+For a complete next-week plan, ask naturally, for example: “Help me make a stricter budget
+for next week.” The agent reads up to four completed weeks plus current week/month context,
+then presents every category, its old/new amount, delta, reason, planned income, savings target,
+and residual. Totals are computed by the deterministic planning service. Apply writes all
+operations in one transaction; stale or partially invalid plans are rejected without mutation.
+`/plan next-week` starts the same confirmation flow. While a plan is pending, a follow-up such
+as “Make Food 12,000 and keep the rest” creates a complete replacement proposal and disables
+the older card, so only one next-week plan remains actionable. `/help` lists commands without
+requiring an API key.
+
+See [`design/V2_PHASE_2_AGENT.md`](./design/V2_PHASE_2_AGENT.md) for tool contracts,
+API/stream events, confirmation guarantees and the end-to-end demo. Standard tests use
+model stubs and make no paid model calls.
+
+<!-- --- -->
+
 ## Roadmap <a name="roadmap"></a>
 
 Phase definitions and decision history live in [`design/`](./design/) and per-session [`docs/dev_log/`](./docs/dev_log/).
 
-- ✅ **Phase 0** — `backend/core/` extracted as a framework-free library.
-- ✅ **Phase 1** — FastAPI service + 5-screen frontend, real-LLM end-to-end.
-  - ✨ Beyond the original spec: multi-receipt support, quick-import mode, per-draft carousel with Save/Skip/Previous, processing queue with state-lifted tab-switch fix.
-- ⏳ **Dogfood Phase 1** — using it daily before opening Phase 2.
-- 🔮 **Phase 2 backend** — accounts, merchant normalization, transfers, budgets, recurring rules, `review_queue` table, ReviewRouter.
-- 🔮 **Phase 2 frontend** — Accounts / Budget / Recurring / Review screens (the "Soon" sidebar slots).
-- 🔮 **Phase 3** — chatbot panel (LangChain returns), dark mode, i18n (zh/ja), ⌘K command palette, correction-learning rules.
+- **V1 foundation preserved:** receipt pipeline, transaction/category/settings CRUD and the MITA design system.
+- **V2 Phase 1 implemented:** deterministic Budget Core, Dashboard and Plan.
+- **V2 Phase 2 Agent Core implemented:** global Chat, typed tools, deterministic commands, confirmation, action audit and complete next-week planning with Edit/Apply/Cancel/Undo.
+- **Next:** dogfood the planning loop; provider token streaming and longer-history planning UX remain follow-ups.
+- Accounts, net worth, recurring workers, review queues and bank sync are not priorities in this phase.
 
 For a fresh contributor (or a fresh Claude session): start by reading the latest [`docs/dev_log/`](./docs/dev_log/) entry — it doubles as a sticky-decisions handoff.
 

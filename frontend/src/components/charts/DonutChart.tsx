@@ -5,6 +5,7 @@ interface Slice {
   slug: string;     // category slug (e.g. "food") — used for color lookup
   label: string;    // human label
   value: number;    // numeric weight
+  color?: string;   // explicit paint (Category.colorDot from the DB) — wins over the seed map
 }
 
 interface Props {
@@ -26,6 +27,11 @@ const SEED_DOT_COLORS: Record<string, string> = {
   rent: 'var(--color-cat-rent-dot)',
   other: 'var(--color-cat-other-dot)',
 };
+
+/** Resolve a slice's paint. Legends must use this too, so ring and key never drift. */
+export function sliceColor(d: Pick<Slice, 'slug' | 'color'>): string {
+  return d.color ?? SEED_DOT_COLORS[d.slug] ?? 'var(--color-ink-500)';
+}
 
 export function DonutChart({
   data,
@@ -69,7 +75,7 @@ export function DonutChart({
     const yi0 = cy + Math.sin(a0) * ir;
     return {
       path: `M${x0},${y0} A${r},${r} 0 ${large} 1 ${x1},${y1} L${xi1},${yi1} A${ir},${ir} 0 ${large} 0 ${xi0},${yi0} Z`,
-      fill: SEED_DOT_COLORS[d.slug] ?? 'var(--color-ink-500)',
+      fill: sliceColor(d),
       label: d.label,
     };
   });

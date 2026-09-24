@@ -3,13 +3,13 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 
-def test_list_returns_nine_seeded_in_sort_order(client: TestClient) -> None:
+def test_list_returns_seeded_slugs_in_sort_order(client: TestClient) -> None:
     r = client.get("/api/categories")
     assert r.status_code == 200
     data = r.json()["data"]
     assert [c["id"] for c in data] == [
         "food", "transport", "shopping", "bills",
-        "entertain", "health", "income", "rent", "other",
+        "entertain", "health", "income", "rent", "other", "transfer",
     ]
     # camelCase serialization sanity
     assert "colorBg" in data[0] and "autoAssign" in data[0]
@@ -60,6 +60,16 @@ def test_patch_updates_label(client: TestClient) -> None:
     r = client.patch("/api/categories/food", json={"label": "Groceries"})
     assert r.status_code == 200
     assert r.json()["data"]["label"] == "Groceries"
+
+
+def test_category_icon_symbol_and_custom_image(client: TestClient) -> None:
+    assert client.patch("/api/categories/food", json={"icon": "🥖"}).json()["data"]["icon"] == "🥖"
+    from backend.tests.api.conftest import VALID_PNG_BYTES
+    response = client.post("/api/categories/food/icon-image", files={"image": ("food.png", VALID_PNG_BYTES, "image/png")})
+    assert response.status_code == 200, response.text
+    icon_url = response.json()["data"]["iconImageUrl"]
+    assert icon_url.startswith("/media/category-icons/")
+    assert client.get(icon_url).status_code == 200
 
 
 def test_delete_system_category_returns_409(client: TestClient) -> None:

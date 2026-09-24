@@ -36,6 +36,32 @@ class CategoryInUseError(ConflictError):
     code = "category_in_use"
 
 
+class AccountInUseError(ConflictError):
+    code = "account_in_use"
+
+
+class SystemAccountError(ConflictError):
+    """The default Cash account backs account-less writes (frontend Phase 1)
+    and cannot be deleted while those clients exist."""
+
+    code = "cannot_delete_default_account"
+
+
+class ArchivedAccountError(ValidationError):
+    code = "account_archived"
+
+
+class TransferLegEditError(ValidationError):
+    """A transfer leg was PATCHed/created through the generic transactions
+    surface. Legs are only editable as a pair via the transfers endpoints."""
+
+    code = "transfer_leg_edit_forbidden"
+
+
+class TransferEndpointRequiredError(ValidationError):
+    code = "use_transfers_endpoint"
+
+
 class SystemCategoryError(ConflictError):
     code = "cannot_delete_system_category"
 

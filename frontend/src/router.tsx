@@ -1,17 +1,22 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
+import { PlanPage } from '@/pages/PlanPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { RecordsPage } from '@/pages/RecordsPage';
 import { ImportPage } from '@/pages/ImportPage';
 import { CategoriesPage } from '@/pages/CategoriesPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { ChatPage } from '@/pages/ChatPage';
 
 export const router = createBrowserRouter([
+  { path: '/chat', element: <ChatPage /> },
+  { path: '/chat/:sessionId', element: <ChatPage /> },
   {
     path: '/',
     element: <AppShell />,
     children: [
       { index: true, element: <DashboardPage />, handle: { title: 'Home' } },
+      { path: 'plan', element: <PlanPage />, handle: { title: 'Plan' } },
       { path: 'records', element: <RecordsPage />, handle: { title: 'Records' } },
       { path: 'import', element: <ImportPage />, handle: { title: 'Import' } },
       { path: 'categories', element: <CategoriesPage />, handle: { title: 'Categories' } },

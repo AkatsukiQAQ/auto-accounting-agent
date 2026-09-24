@@ -15,8 +15,8 @@ import { ApiError } from '@/lib/api';
 import {
   type DraftItem,
   type Job,
-  findNextEditable,
-  findPrevEditable,
+  findNext,
+  findPrev,
   isAutoSavable,
   isReviewing,
   jobStats,
@@ -242,14 +242,43 @@ export function ImportPage() {
     }
   }
 
+  function isActionable(it: DraftItem): boolean {
+    return it.status === 'pending' || it.status === 'error' || it.status === 'skipped';
+  }
+
+  /** Walk to the next item OR finalize the job if every item has been
+   *  decided (saved or skipped). */
+  function advanceOrFinalize(items: DraftItem[], from: number, dir: 'forward' | 'backward') {
+    const stillToHandle = items.some((x) => x.status === 'pending' || x.status === 'error');
+    if (!stillToHandle) {
+      // Nothing left to confirm — finalize regardless of cursor position.
+      const finalJob: Job = { ...activeJob!, items, cursor: items.length, status: 'done' };
+      moveJobToHistory(finalJob);
+      return;
+    }
+    const nextIdx = dir === 'forward' ? findNext(items, from) : findPrev(items, from);
+    if (nextIdx === -1) {
+      // Hit the end with stuff still pending — stay put, just refresh items.
+      updateActive((j) => ({ ...j, items }));
+      return;
+    }
+    setDirection(dir);
+    setAnimTick((t) => t + 1);
+    updateActive((j) => ({ ...j, items, cursor: nextIdx }));
+  }
+
   async function onSubmitForm(input: TransactionCreate) {
     if (!activeJob) return;
     const job = activeJob;
+    const current = job.items[job.cursor];
+
     if (intentRef.current === 'all') {
-      // Save current + all subsequent non-saved items.
-      let items = await commitDraft(input, job.cursor, job.items);
+      // Save current (if actionable) + every subsequent actionable item.
+      let items = isActionable(current)
+        ? await commitDraft(input, job.cursor, job.items)
+        : job.items;
       for (let i = job.cursor + 1; i < items.length; i += 1) {
-        if (items[i].status === 'saved') continue;
+        if (!isActionable(items[i])) continue;
         try {
           await createM.mutateAsync(items[i].draft);
           items = items.map((x, k) => (k === i ? { ...x, status: 'saved' } : x));
@@ -262,44 +291,34 @@ export function ImportPage() {
       }
       const finalJob: Job = { ...job, items, cursor: items.length, status: 'done' };
       moveJobToHistory(finalJob);
-    } else {
-      const items = await commitDraft(input, job.cursor, job.items);
-      const nextIdx = findNextEditable(items, job.cursor);
-      if (nextIdx === -1) {
-        const finalJob: Job = { ...job, items, cursor: items.length, status: 'done' };
-        moveJobToHistory(finalJob);
-      } else {
-        setDirection('forward');
-        setAnimTick((t) => t + 1);
-        updateActive((j) => ({ ...j, items, cursor: nextIdx }));
-      }
+      return;
     }
+
+    // intent === 'one'
+    if (!isActionable(current)) {
+      // Already saved — Save next is presented as "Next →" and just navigates.
+      advanceOrFinalize(job.items, job.cursor, 'forward');
+      return;
+    }
+    const items = await commitDraft(input, job.cursor, job.items);
+    advanceOrFinalize(items, job.cursor, 'forward');
   }
 
   function onSkip() {
     if (!activeJob) return;
+    const current = activeJob.items[activeJob.cursor];
+    // Can't skip an already-saved item. Button should be disabled in that
+    // state, but guard here too.
+    if (current.status === 'saved') return;
     const items = activeJob.items.map((x, i) =>
       i === activeJob.cursor ? { ...x, status: 'skipped' as const } : x,
     );
-    const nextIdx = findNextEditable(items, activeJob.cursor);
-    if (nextIdx === -1) {
-      const finalJob: Job = {
-        ...activeJob,
-        items,
-        cursor: items.length,
-        status: 'done',
-      };
-      moveJobToHistory(finalJob);
-    } else {
-      setDirection('forward');
-      setAnimTick((t) => t + 1);
-      updateActive((j) => ({ ...j, items, cursor: nextIdx }));
-    }
+    advanceOrFinalize(items, activeJob.cursor, 'forward');
   }
 
   function onPrevious() {
     if (!activeJob) return;
-    const prevIdx = findPrevEditable(activeJob.items, activeJob.cursor);
+    const prevIdx = findPrev(activeJob.items, activeJob.cursor);
     if (prevIdx === -1) return;
     setDirection('backward');
     setAnimTick((t) => t + 1);
@@ -552,10 +571,11 @@ function CarouselArea({
   const current = job.items[job.cursor];
   if (!current) return null;
   const formId = `draft-form-${job.id}-${current.key}-${animTick}`;
-  const canPrev = findPrevEditable(job.items, job.cursor) !== -1;
+  const canPrev = job.cursor > 0;
+  const isCurrentSaved = current.status === 'saved';
   const remainingAfter = job.items
     .slice(job.cursor + 1)
-    .filter((x) => x.status !== 'saved').length;
+    .filter((x) => x.status === 'pending' || x.status === 'error' || x.status === 'skipped').length;
 
   return (
     <div className="space-y-3">
@@ -630,6 +650,7 @@ function CarouselArea({
           draft={current.draft}
           confidence={current.confidence}
           errorMessage={current.errorMessage}
+          status={current.status}
           previewImageUrl={job.previewUrl}
           defaultCurrency={defaultCurrency}
           formId={formId}
@@ -645,20 +666,52 @@ function CarouselArea({
             ← Previous
           </Button>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="ghost" onClick={onSkip} disabled={isPending}>
+            {/* Skip — only meaningful for actionable drafts. */}
+            <Button
+              variant="ghost"
+              onClick={onSkip}
+              disabled={isPending || isCurrentSaved}
+            >
               Skip
             </Button>
-            <Button
-              type="submit"
-              form={formId}
-              onClick={() => {
-                intentRef.current = 'one';
-              }}
-              disabled={isPending}
-            >
-              {isPending && intentRef.current === 'one' ? 'Saving…' : 'Save next'}
-            </Button>
-            {remainingAfter > 0 && (
+
+            {/* Primary advance button. For saved drafts the form submit is
+                a no-op — we just navigate forward. Bypass the form to avoid
+                round-tripping through TransactionForm.handleSubmit which
+                might re-validate stale state. */}
+            {isCurrentSaved ? (
+              <Button
+                onClick={() => {
+                  intentRef.current = 'one';
+                  // Trigger the parent's "advance" path directly. We can't
+                  // easily inline that here without lifting more state, so
+                  // submit the form and let onSubmitForm's saved-guard handle
+                  // the no-op. The TransactionForm's submit goes through —
+                  // we ignore the form values in onSubmitForm when status
+                  // is 'saved'.
+                  const form = document.getElementById(formId) as HTMLFormElement | null;
+                  form?.requestSubmit();
+                }}
+                disabled={isPending}
+              >
+                Next →
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                form={formId}
+                onClick={() => {
+                  intentRef.current = 'one';
+                }}
+                disabled={isPending}
+              >
+                {isPending && intentRef.current === 'one' ? 'Saving…' : 'Save next'}
+              </Button>
+            )}
+
+            {/* Save all remaining — only visible when there's still actionable
+                stuff after this card. Ignored for already-saved current. */}
+            {remainingAfter > 0 && !isCurrentSaved && (
               <Button
                 type="submit"
                 form={formId}
@@ -688,6 +741,7 @@ interface DraftCardProps {
   draft: TransactionCreate;
   confidence: number;
   errorMessage?: string;
+  status: DraftItem['status'];
   previewImageUrl: string | null;
   defaultCurrency: string;
   formId: string;
@@ -700,6 +754,7 @@ function DraftCard({
   draft,
   confidence,
   errorMessage,
+  status,
   previewImageUrl,
   defaultCurrency,
   formId,
@@ -721,7 +776,7 @@ function DraftCard({
             <h4 className="text-sm font-semibold text-ink-900">
               Draft {index + 1} of {total}
             </h4>
-            <div className="mt-0.5 flex items-center gap-2 text-xs">
+            <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
               <span className="text-ink-500">Confidence</span>
               <span
                 className={[
@@ -736,10 +791,34 @@ function DraftCard({
                   low — double-check
                 </span>
               )}
+              {status === 'saved' && (
+                <span className="rounded-full bg-pos-50 px-2 py-0.5 text-[11px] font-semibold text-pos-500">
+                  ✓ Saved
+                </span>
+              )}
+              {status === 'skipped' && (
+                <span className="rounded-full bg-cream-200 px-2 py-0.5 text-[11px] font-semibold text-ink-500">
+                  Skipped
+                </span>
+              )}
+              {status === 'error' && (
+                <span className="rounded-full bg-neg-50 px-2 py-0.5 text-[11px] font-semibold text-neg-500">
+                  Failed
+                </span>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {status === 'saved' && (
+        <div className="mb-3">
+          <Alert tone="info">
+            This draft is already saved to your records. Edits here aren't
+            applied — to change it, open it in <strong>Records</strong>.
+          </Alert>
+        </div>
+      )}
 
       {errorMessage && (
         <div className="mb-3">

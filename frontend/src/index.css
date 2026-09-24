@@ -69,13 +69,27 @@
   --color-cat-other: #E9E4D8;
   --color-cat-other-dot: #8B7E6C;
 
-  /* ── Type stacks ── */
-  --font-sans:    "Noto Sans JP", "Geist", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  /* ── Type stacks ──
+   * .hand (titles)        — Kalam-700, locked across all locales.
+   * .hand-body (non-title) — Indie Flower for EN; per-locale swap in Phase 3
+   *                          (zh: Ma Shan Zheng, ja: Klee One).
+   * .num (numeric display) — Klee One, locked per design doc styles.css.
+   * .serif (page titles)   — Fraunces.
+   */
+  /* ── Layout ──
+   * Right-edge page gutter (md+). Wider than the left paddings on purpose:
+   * keeps content clear of browser overlays (e.g. Edge Copilot's floating
+   * chatbot icon docks bottom-right). Referenced as `md:pr-gutter` in
+   * AppShell <main> and TopBar — change it here, both stay aligned.
+   */
+  --spacing-gutter: 4rem;
+
+  --font-sans:      "Noto Sans JP", "Geist", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
   --font-hand:      "Kalam", "Indie Flower", "Klee One", cursive;
   --font-hand-body: "Indie Flower", "Kalam", "Klee One", cursive;
+  --font-num:       "Klee One", "Kalam", "Indie Flower", cursive;
   --font-serif:     "Fraunces", "Noto Sans JP", serif;
-  --font-num:       "Kalam", "Indie Flower", "Klee One", cursive;
-  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono:      "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html, body, #root {
@@ -110,6 +124,7 @@ body {
 .hand-body  { font-family: var(--font-hand-body), cursive; font-weight: 400; }
 .serif      { font-family: var(--font-serif), serif; }
 .num        { font-family: var(--font-num), cursive; font-variant-numeric: tabular-nums; letter-spacing: 0.2px; }
+html[lang="ja"] .hand-body, html[lang="ja"] .num { font-family: "Klee One", "Noto Sans JP", sans-serif; }
 
 /* Paper card with warm brown shadow — matches prototype's .card-paper. */
 .card-paper {
@@ -136,3 +151,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .slide-in-from-right, .slide-in-from-left { animation: none; }
 }
+
+/* Native progress keeps accessible semantics with MITA paper/ink colors. */
+.budget-progress { appearance: none; border: 0; border-radius: 999px; overflow: hidden; background: var(--color-cream-200); }
+.budget-progress::-webkit-progress-bar { background: var(--color-cream-200); }
+.budget-progress::-webkit-progress-value { background: var(--color-ink-700); border-radius: 999px; }
+.budget-progress::-moz-progress-bar { background: var(--color-ink-700); border-radius: 999px; }

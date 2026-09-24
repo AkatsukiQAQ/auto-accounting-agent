@@ -7,15 +7,16 @@ import { RouterProvider } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { queryClient } from '@/lib/queryClient';
 import { router } from '@/router';
+import { LocaleProvider } from '@/lib/locale';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+      <LocaleProvider><QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
-        <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
+        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+      </QueryClientProvider></LocaleProvider>
     </ErrorBoundary>
   </StrictMode>,
 );

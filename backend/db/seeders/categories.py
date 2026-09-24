@@ -29,6 +29,12 @@ class _SeedSpec:
     legacy_sources: tuple[str, ...] = ()  # legacy YAML `name`s to merge keywords from
     sort_order: int = 0
     extra_keywords: tuple[str, ...] = field(default_factory=tuple)
+    auto_assign: bool = True
+
+
+# Slugs that must exist for the ledger to function and that users can never
+# delete. `services/categories.py` derives its SYSTEM_SLUGS from this.
+SYSTEM_CATEGORY_SLUGS: tuple[str, ...] = ("other", "transfer")
 
 
 # Order here becomes sort_order. Mirrors CAT_COLORS declaration in primitives.jsx.
@@ -105,6 +111,17 @@ _SPECS: tuple[_SeedSpec, ...] = (
         legacy_sources=("Others",),
         sort_order=90,
     ),
+    # Phase 2: system category for transfer legs. Neutral ink greys so it never
+    # reads as spend; auto_assign=False keeps it out of the classifier.
+    _SeedSpec(
+        id="transfer",
+        label="Transfer",
+        color_bg="#E5DED0",
+        color_dot="#6B5E4E",
+        legacy_sources=(),
+        sort_order=100,
+        auto_assign=False,
+    ),
 )
 
 
@@ -136,7 +153,7 @@ def _build_rows() -> list[dict[str, object]]:
                 "color_bg": spec.color_bg,
                 "color_dot": spec.color_dot,
                 "keywords": _merged_keywords(spec, legacy_by_name),
-                "auto_assign": True,
+                "auto_assign": spec.auto_assign,
                 "sort_order": spec.sort_order,
             }
         )
@@ -152,7 +169,9 @@ def seed_categories(session: Session, *, force: bool = False) -> int:
     """
     existing_ids: set[str] = set(session.scalars(select(Category.id)).all())
 
-    if existing_ids and not force:
+    # Migration 0004 inserts `transfer` even into a brand-new database. That
+    # migration-only row must not suppress first-boot category initialization.
+    if existing_ids and existing_ids != {"transfer"} and not force:
         return 0
 
     rows = _build_rows()
@@ -163,6 +182,25 @@ def seed_categories(session: Session, *, force: bool = False) -> int:
         session.add(Category(**row))
         inserted += 1
 
+    if inserted:
+        session.flush()
+    return inserted
+
+
+def ensure_system_categories(session: Session) -> int:
+    """Upsert only the system slugs (other / transfer) that are missing.
+
+    `seed_categories` early-returns on any populated table, so a Phase-1
+    database upgraded in place would never receive `transfer` from it. This
+    runs on every boot and inserts ONLY missing system rows — deliberately not
+    `force=True`, which would also resurrect non-system seeds the user deleted.
+    """
+    existing_ids: set[str] = set(session.scalars(select(Category.id)).all())
+    inserted = 0
+    for row in _build_rows():
+        if row["id"] in SYSTEM_CATEGORY_SLUGS and row["id"] not in existing_ids:
+            session.add(Category(**row))
+            inserted += 1
     if inserted:
         session.flush()
     return inserted

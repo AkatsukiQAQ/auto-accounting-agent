@@ -11,6 +11,7 @@ import {
   useCategories,
   useCreateCategory,
   useDeleteCategory,
+  useUploadCategoryIcon,
   useUpdateCategory,
 } from '@/hooks/useCategories';
 import { ApiError } from '@/lib/api';
@@ -27,6 +28,7 @@ export function CategoriesPage() {
   const createM = useCreateCategory();
   const updateM = useUpdateCategory();
   const deleteM = useDeleteCategory();
+  const uploadIconM = useUploadCategoryIcon();
 
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
   const [deleteError, setDeleteError] = useState<{
@@ -98,7 +100,7 @@ export function CategoriesPage() {
               {list.data.map((c) => (
                 <tr key={c.id}>
                   <td className="px-4 py-3">
-                    <CatPill slug={c.id} label={c.label} />
+                    <CatPill slug={c.id} label={c.label} icon={c.icon} imageUrl={c.iconImageUrl} />
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-ink-500">{c.id}</td>
                   <td className="px-4 py-3 text-ink-700">
@@ -162,6 +164,8 @@ export function CategoriesPage() {
         {modal.kind === 'edit' && (
           <CategoryForm
             initial={modal.cat}
+            onUploadIcon={(file) => uploadIconM.mutateAsync({ id: modal.cat.id, file })}
+            uploadingIcon={uploadIconM.isPending}
             onSubmit={async (input) => {
               await updateM.mutateAsync({
                 id: modal.cat.id,

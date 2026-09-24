@@ -154,7 +154,7 @@ export function RecordsPage() {
             <thead className="bg-cream-200/60 text-left text-xs uppercase tracking-wide text-ink-500">
               <tr>
                 <th className="px-4 py-2 font-semibold">Date</th>
-                <th className="px-4 py-2 font-semibold">Merchant</th>
+                <th className="px-4 py-2 font-semibold">Description</th>
                 <th className="px-4 py-2 font-semibold">Category</th>
                 <th className="px-4 py-2 font-semibold text-right">Amount</th>
                 <th className="px-4 py-2 font-semibold">Source</th>
@@ -168,7 +168,8 @@ export function RecordsPage() {
                     {new Date(t.occurredAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-ink-900">
-                    {t.merchant}
+                    {t.merchant ?? (t.granularity === 'aggregate_adjustment' ? 'Category adjustment' : 'Quick expense')}
+                    {t.granularity === 'aggregate_adjustment' && <div className="text-xs text-warn-500">Aggregate adjustment · delete to reverse</div>}
                     {t.note ? (
                       <div className="text-xs text-ink-500" title={t.note}>
                         {t.note.length > 60 ? t.note.slice(0, 60) + '…' : t.note}
@@ -273,7 +274,7 @@ export function RecordsPage() {
       >
         {modal.kind === 'delete' && (
           <p className="text-sm text-ink-700">
-            Delete <span className="font-semibold">{modal.txn.merchant}</span> for{' '}
+            Delete <span className="font-semibold">{modal.txn.merchant ?? 'this expense or adjustment'}</span> for{' '}
             <span className="font-mono">{fmtMoney(modal.txn.amountCents, modal.txn.currency)}</span>?
           </p>
         )}

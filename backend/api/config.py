@@ -16,6 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class AppConfig(BaseSettings):
     database_url: str = "sqlite:///./mita.db"
     llm_model: str = "gpt-5-nano"
+    agent_model: str = "gpt-5-nano"
     image_storage_dir: Path = Path("./storage/images")
     image_public_base_url: str = "/media"
     cors_origins: tuple[str, ...] = ("http://localhost:5173",)

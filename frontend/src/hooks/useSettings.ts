@@ -21,6 +21,7 @@ export function useUpdateSettings() {
       }),
     onSuccess: (data) => {
       qc.setQueryData(KEY, data);
+      void qc.invalidateQueries({ queryKey: ['budgets'] });
     },
   });
 }

@@ -115,6 +115,9 @@ def _build_preview(
     public_image_url: str,
     raw_text: str,
     llm_model: str,
+    *,
+    merchant_raw: str | None = None,
+    merchant_normalized: str | None = None,
 ) -> TransactionCreate:
     amount_cents = (
         -round((parsed.amount or 0) * 100) if parsed.amount is not None else 0
@@ -128,6 +131,8 @@ def _build_preview(
         amount_cents=amount_cents,
         currency=parsed.currency or "USD",
         category_id=category_id,
+        merchant_raw=merchant_raw,
+        merchant_normalized=merchant_normalized,
         source="photo",
         confidence=_overall_confidence(parsed, classified),
         raw=RawIn(
@@ -183,10 +188,11 @@ def post_photo(
         str(saved_path),
     )
 
-    parsed_list: ParsedOcrResult = result.parsed
+    raw_list: ParsedOcrResult = result.parsed  # verbatim OCR merchants
+    normalized_list: ParsedOcrResult = result.normalized.parsed  # brand-level merchants
     classified_list: ClassificationResult = result.classified
 
-    if not parsed_list.parsed_ocr_results:
+    if not normalized_list.parsed_ocr_results:
         logger.info("OCR returned no receipts; returning placeholder draft")
         return Data(data=_placeholder_response(public_url, result.llm_model))
 
@@ -197,10 +203,24 @@ def post_photo(
     previews: list[TransactionCreate] = []
     confidences: list[float] = []
     ocr_chunks: list[str] = []
-    for i, parsed in enumerate(parsed_list.parsed_ocr_results):
+    for i, (raw_receipt, parsed, outcome) in enumerate(
+        zip(
+            raw_list.parsed_ocr_results,
+            normalized_list.parsed_ocr_results,
+            result.normalized.outcomes,
+        )
+    ):
         classified = classified_by_idx.get(i)
         previews.append(
-            _build_preview(parsed, classified, public_url, parsed.raw_text, result.llm_model)
+            _build_preview(
+                parsed,
+                classified,
+                public_url,
+                parsed.raw_text,
+                result.llm_model,
+                merchant_raw=raw_receipt.merchant,
+                merchant_normalized=outcome.normalized if outcome else None,
+            )
         )
         confidences.append(_overall_confidence(parsed, classified))
         if parsed.raw_text:
