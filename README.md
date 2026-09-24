@@ -1,14 +1,14 @@
 <div align="center">
 
+# Auto-Accounting Agent
+
 <img src="docs/assets/finance_banner.png" alt="Mita Finance — your co-pilot for smarter spending" width="100%">
 
-# Auto-Accounting Agent
+**A budget-first personal finance app: plan your week or month, track spending, and see what remains.**
 
 ![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Phase](https://img.shields.io/badge/phase-V2%20Agent%20Core-success)
 ![Tests](https://img.shields.io/badge/backend%20tests-319%20passing-success)
-
-**A budget-first personal finance app: plan your week or month, track spending, and see what remains.**
 
 </div>
 
