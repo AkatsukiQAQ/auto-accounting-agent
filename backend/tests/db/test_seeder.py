@@ -16,6 +16,7 @@ EXPECTED_SLUGS = (
     "income",
     "rent",
     "other",
+    "transfer",  # Phase 2 system category (auto_assign=False)
 )
 
 
@@ -23,9 +24,9 @@ def _all_categories(session: Session) -> list[Category]:
     return list(session.scalars(select(Category).order_by(Category.sort_order)).all())
 
 
-def test_seeder_writes_nine_slugs(session: Session) -> None:
+def test_seeder_writes_all_seed_slugs(session: Session) -> None:
     inserted = seed_categories(session)
-    assert inserted == 9
+    assert inserted == 10
 
     cats = _all_categories(session)
     assert [c.id for c in cats] == list(EXPECTED_SLUGS)
@@ -76,13 +77,13 @@ def test_seeder_empty_seed_slugs_have_no_keywords(session: Session) -> None:
 
 def test_seeder_is_idempotent(session: Session) -> None:
     first = seed_categories(session)
-    assert first == 9
+    assert first == 10
 
     second = seed_categories(session)
     assert second == 0, "re-running seeder on populated DB must be a no-op"
 
     cats = _all_categories(session)
-    assert len(cats) == 9
+    assert len(cats) == 10
 
 
 def test_seeder_force_backfills_missing_only(session: Session) -> None:
@@ -102,7 +103,7 @@ def test_seeder_force_backfills_missing_only(session: Session) -> None:
     session.flush()
 
     inserted = seed_categories(session, force=True)
-    assert inserted == 8
+    assert inserted == 9
 
     food = session.get(Category, "food")
     assert food is not None

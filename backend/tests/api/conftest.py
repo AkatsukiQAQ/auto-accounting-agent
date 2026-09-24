@@ -14,7 +14,7 @@ from backend.api.config import AppConfig
 from backend.api.deps import get_llm
 from backend.api.main import create_app
 from backend.db.base import Base
-from backend.db.models import Category, Transaction, UserSettings  # noqa: F401
+import backend.db.models  # noqa: F401  (importing the package registers every table)
 from backend.tests.services.fakes import FakePipelineLLM
 
 

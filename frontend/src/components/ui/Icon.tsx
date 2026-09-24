@@ -15,7 +15,8 @@ type IconName =
   | 'chevronRight'
   | 'image'
   | 'search'
-  | 'alert';
+  | 'alert'
+  | 'message';
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 12l9-9 9 9M5 10v10h14V10',
@@ -32,6 +33,7 @@ const PATHS: Record<IconName, string> = {
   image: 'M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8 13l3 3 5-7 5 6',
   search: 'M11 19a8 8 0 100-16 8 8 0 000 16zm10 2l-4.35-4.35',
   alert: 'M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z',
+  message: 'M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4v8z',
 };
 
 interface Props {

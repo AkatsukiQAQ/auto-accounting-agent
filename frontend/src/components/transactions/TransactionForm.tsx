@@ -76,7 +76,6 @@ export function TransactionForm({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!merchant.trim()) return setError('Merchant is required.');
     const amountCents = buildAmountCents();
     if (amountCents === null) return setError('Amount must be a positive number.');
     if (!occurredAt) return setError('Date/time is required.');
@@ -85,11 +84,11 @@ export function TransactionForm({
     try {
       const payload: TransactionCreate = {
         occurredAt: fromLocalDatetime(occurredAt),
-        merchant: merchant.trim(),
+        merchant: merchant.trim() || null,
         amountCents,
         currency,
         categoryId,
-        source: (initial?.source as 'photo' | 'manual') ?? 'manual',
+        source: initial?.source ?? 'manual',
         confidence: initial?.confidence ?? null,
         note: note.trim() || null,
         raw: initial?.raw ?? null,
@@ -108,14 +107,13 @@ export function TransactionForm({
     <form id={formId} onSubmit={handleSubmit} className="space-y-3">
       {error ? <Alert tone="error">{error}</Alert> : null}
 
-      <Field label="Merchant">
+      <Field label="Merchant (optional)">
         <input
           type="text"
           value={merchant}
           onChange={(e) => setMerchant(e.target.value)}
           className={inputClass}
           placeholder="Starbucks Shibuya"
-          required
         />
       </Field>
 

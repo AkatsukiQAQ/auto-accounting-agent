@@ -27,6 +27,7 @@ from backend.core.schemas import (
     ParsedOcrResult,
 )
 from backend.db.models import Category as DbCategory
+from backend.services.normalization import NormalizationOutcome, normalize
 from backend.services.pipeline.config import PipelineConfig
 from backend.services.pipeline.llm import PipelineLLM
 
@@ -62,6 +63,36 @@ class ParseStage:
             if r.currency is None or r.currency in accepted
         ]
         return ParsedOcrResult(parsed_ocr_results=kept)
+
+
+@dataclass
+class NormalizedParse:
+    """NormalizeStage output: receipts with brand-level merchant names, plus the
+    per-receipt outcomes (parallel list; None where a receipt had no merchant)."""
+
+    parsed: ParsedOcrResult
+    outcomes: list[NormalizationOutcome | None]
+
+
+class NormalizeStage:
+    """ParsedOcrResult → NormalizedParse. Runs between Parse and Classify so the
+    classifier (and Phase-3 learned rules) see ONE identity per brand — the
+    verbatim OCR string survives in PipelineResult.parsed / merchant_raw."""
+
+    def run(self, ctx: StageContext, parsed: ParsedOcrResult) -> NormalizedParse:
+        receipts = []
+        outcomes: list[NormalizationOutcome | None] = []
+        for receipt in parsed.parsed_ocr_results:
+            if receipt.merchant:
+                outcome = normalize(ctx.session, receipt.merchant, count_alias_hits=True)
+                outcomes.append(outcome)
+                receipts.append(receipt.model_copy(update={"merchant": outcome.normalized}))
+            else:
+                outcomes.append(None)
+                receipts.append(receipt)
+        return NormalizedParse(
+            parsed=ParsedOcrResult(parsed_ocr_results=receipts), outcomes=outcomes
+        )
 
 
 class ClassifyStage:
@@ -106,8 +137,15 @@ def _hydrate_categories_from_db(session: Session) -> list[CoreCategory]:
     label ("Food"). The slug is what flows through classification results and
     becomes `categoryId` on transactions — keeping one string end-to-end avoids
     a mapping round-trip.
+
+    Only `auto_assign=True` rows participate: system categories like `transfer`
+    exist for ledger bookkeeping and must never be offered to the classifier.
     """
-    rows = session.scalars(select(DbCategory).order_by(DbCategory.sort_order)).all()
+    rows = session.scalars(
+        select(DbCategory)
+        .where(DbCategory.auto_assign.is_(True))
+        .order_by(DbCategory.sort_order)
+    ).all()
     return [
         CoreCategory(
             name=row.id,

@@ -56,6 +56,7 @@ export function useTransaction(id: string | undefined) {
 
 function invalidateAll(qc: ReturnType<typeof useQueryClient>) {
   void qc.invalidateQueries({ queryKey: ['transactions'] });
+  void qc.invalidateQueries({ queryKey: ['budgets'] });
 }
 
 export function useCreateTransaction() {

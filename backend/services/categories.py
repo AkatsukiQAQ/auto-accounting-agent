@@ -1,7 +1,8 @@
 """Category CRUD service.
 
 Two non-obvious invariants:
-- The `other` slug is undeletable — it's the classifier's fallback bucket.
+- System slugs (`other` — the classifier's fallback bucket; `transfer` — the
+  ledger's transfer-leg category) are undeletable.
 - A category referenced by any transaction cannot be deleted; frontend must
   bulk-reassign first. Returning 409 (not 500) makes that actionable.
 """
@@ -13,7 +14,8 @@ from typing import Any, Iterable
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from backend.db.models import Category, Transaction
+from backend.db.models import BudgetItem, Category, Transaction
+from backend.db.seeders.categories import SYSTEM_CATEGORY_SLUGS
 from backend.services.errors import (
     CategoryInUseError,
     NotFoundError,
@@ -21,7 +23,7 @@ from backend.services.errors import (
     ValidationError,
 )
 
-SYSTEM_SLUGS: frozenset[str] = frozenset({"other"})
+SYSTEM_SLUGS: frozenset[str] = frozenset(SYSTEM_CATEGORY_SLUGS)
 _SLUG_RE = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
 _HEX_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
@@ -48,6 +50,7 @@ def create_category(
     label: str,
     color_bg: str,
     color_dot: str,
+    icon: str | None = None,
     keywords: Iterable[str] | None = None,
     auto_assign: bool = True,
     sort_order: int | None = None,
@@ -55,6 +58,7 @@ def create_category(
     _validate_slug(id)
     _validate_color(color_bg, "colorBg")
     _validate_color(color_dot, "colorDot")
+    _validate_icon(icon)
     if session.get(Category, id) is not None:
         raise ValidationError(
             f"category {id!r} already exists",
@@ -70,6 +74,7 @@ def create_category(
         label=label,
         color_bg=color_bg,
         color_dot=color_dot,
+        icon=icon,
         keywords=list(keywords or []),
         auto_assign=auto_assign,
         sort_order=sort_order,
@@ -84,7 +89,7 @@ def update_category(
 ) -> Category:
     cat = get_category(session, category_id)
 
-    allowed = {"label", "color_bg", "color_dot", "keywords", "auto_assign", "sort_order"}
+    allowed = {"label", "color_bg", "color_dot", "icon", "icon_image_url", "keywords", "auto_assign", "sort_order"}
     unknown = set(updates) - allowed
     if unknown:
         raise ValidationError(
@@ -96,11 +101,22 @@ def update_category(
         _validate_color(updates["color_bg"], "colorBg")
     if "color_dot" in updates:
         _validate_color(updates["color_dot"], "colorDot")
+    if "icon" in updates:
+        _validate_icon(updates["icon"])
+    if "icon_image_url" in updates and updates["icon_image_url"] is not None:
+        raise ValidationError("Upload category images through the icon-image endpoint")
     if "keywords" in updates:
         updates["keywords"] = list(updates["keywords"] or [])
 
     for k, v in updates.items():
         setattr(cat, k, v)
+    session.flush()
+    return cat
+
+
+def set_category_icon_image(session: Session, category_id: str, public_url: str) -> Category:
+    cat = get_category(session, category_id)
+    cat.icon_image_url = public_url
     session.flush()
     return cat
 
@@ -123,6 +139,9 @@ def delete_category(session: Session, category_id: str) -> None:
             meta={"id": cat.id, "transactionCount": int(txn_count)},
         )
 
+    if session.scalar(select(BudgetItem.id).where(BudgetItem.category_id == cat.id).limit(1)):
+        raise CategoryInUseError("Category is referenced by a budget item", meta={"id": cat.id})
+
     session.delete(cat)
     session.flush()
 
@@ -144,3 +163,8 @@ def _validate_color(value: str, field: str) -> None:
             f"{field} must be a #RRGGBB hex color, got {value!r}",
             meta={"field": field},
         )
+
+
+def _validate_icon(value: str | None) -> None:
+    if value is not None and (not isinstance(value, str) or not value.strip() or len(value) > 16):
+        raise ValidationError("icon must be a short, non-empty emoji or symbol", meta={"field": "icon"})

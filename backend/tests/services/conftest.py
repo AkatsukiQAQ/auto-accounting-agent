@@ -8,8 +8,9 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from backend.db.base import Base
-from backend.db.models import Category, Transaction, UserSettings  # noqa: F401  (register tables)
-from backend.db.seeders.categories import seed_categories
+import backend.db.models  # noqa: F401  (importing the package registers every table)
+from backend.db.seeders.accounts import ensure_default_cash_account
+from backend.db.seeders.categories import ensure_system_categories, seed_categories
 from backend.services.pipeline.config import PipelineConfig
 from backend.services.pipeline.llm import PipelineLLM
 from backend.services.pipeline.stages import StageContext
@@ -31,6 +32,8 @@ def session(engine: Engine) -> Iterator[Session]:
     s = factory()
     try:
         seed_categories(s)
+        ensure_system_categories(s)
+        ensure_default_cash_account(s)
         s.flush()
         yield s
     finally:

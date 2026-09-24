@@ -7,7 +7,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from backend.db.base import Base
-from backend.db.models import Category, Transaction, UserSettings  # noqa: F401  (register tables)
+import backend.db.models  # noqa: F401  (importing the package registers every table on Base.metadata)
 
 config = context.config
 

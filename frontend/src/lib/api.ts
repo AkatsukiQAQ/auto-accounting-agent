@@ -1,4 +1,5 @@
 // Tiny fetch wrapper — base URL from env, envelope unwrap, typed errors.
+import { parseChatLines, type ChatEvent } from './chat';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
 
@@ -92,4 +93,34 @@ export function qs(params: Record<string, string | number | string[] | undefined
     }
   }
   return out.length ? `?${out.join('&')}` : '';
+}
+
+/** Stream typed progress and committed completion events from Chat. */
+export async function streamChat(path: string, content: string, onEvent: (event: ChatEvent) => void): Promise<void> {
+  const res = await fetch(`${BASE_URL}${path}`, { method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' }, body: JSON.stringify({ content }) });
+  if (!res.ok) throw await parseError(res);
+  if (!res.body) throw new Error('Streaming response unavailable');
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let completed = false;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      buffer += decoder.decode(value, { stream: !done });
+      const parsed = parseChatLines(buffer);
+      buffer = parsed.rest;
+      for (const event of parsed.events) {
+        if (event.type === 'error') throw new Error(event.message);
+        if (event.type === 'done') completed = true;
+        onEvent(event);
+      }
+      if (done) break;
+    }
+    if (!completed) throw new Error('Connection ended. Refresh this chat before retrying to check whether the action completed.');
+  } finally {
+    await reader.cancel();
+    reader.releaseLock();
+  }
 }

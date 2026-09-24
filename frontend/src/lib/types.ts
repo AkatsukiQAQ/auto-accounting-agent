@@ -8,6 +8,8 @@ export interface Category {
   label: string;
   colorBg: string;
   colorDot: string;
+  icon: string | null;
+  iconImageUrl: string | null;
   keywords: string[];
   autoAssign: boolean;
   sortOrder: number;
@@ -20,7 +22,7 @@ export type CategoryCreate = Omit<Category, 'createdAt' | 'sortOrder'> & {
 
 export type CategoryUpdate = Partial<Omit<Category, 'id' | 'createdAt'>>;
 
-export type TransactionSource = 'photo' | 'manual';
+export type TransactionSource = 'photo' | 'manual' | 'receipt' | 'screenshot' | 'csv' | 'slash' | 'agent' | 'adjustment';
 
 export interface RawMeta {
   imageUrl: string | null;
@@ -33,7 +35,8 @@ export interface Transaction {
   id: string;
   occurredAt: string; // ISO 8601
   createdAt: string;
-  merchant: string;
+  merchant: string | null;
+  granularity?: 'transaction' | 'quick' | 'aggregate_adjustment';
   amountCents: number; // negative = expense, positive = income
   currency: string;    // ISO 4217
   categoryId: CategoryId;

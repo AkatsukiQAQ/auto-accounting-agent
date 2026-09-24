@@ -21,14 +21,23 @@ class RawOut(CamelModel):
 
 
 class TransactionOut(CamelModel):
+    granularity: str = "transaction"
     id: str
     occurred_at: datetime
     created_at: datetime
-    merchant: str
+    merchant: Optional[str]
     amount_cents: int
     currency: str
     category_id: str
-    source: Literal["photo", "manual"]
+    account_id: str
+    # Plain str (not Literal) on purpose: response validation must never 500 a
+    # list endpoint over a value the DB accepted.
+    type: str
+    transfer_group_id: Optional[str] = None
+    recurring_rule_id: Optional[str] = None
+    merchant_raw: Optional[str] = None
+    merchant_normalized: Optional[str] = None
+    source: Literal["photo", "manual", "receipt", "screenshot", "csv", "slash", "agent", "adjustment"]
     confidence: Optional[float] = None
     note: Optional[str] = None
     raw: Optional[RawOut] = None
@@ -36,11 +45,21 @@ class TransactionOut(CamelModel):
 
 class TransactionCreate(CamelModel):
     occurred_at: datetime
-    merchant: str
+    merchant: Optional[str] = None
     amount_cents: int
     currency: str
     category_id: str
-    source: Literal["photo", "manual"]
+    # Optional for Phase-1 clients — the service falls back to the default
+    # Cash account when absent.
+    account_id: Optional[str] = None
+    # Plain str so `type: "transfer_out"` reaches the ledger service and gets
+    # the spec'd 400 `use_transfers_endpoint` instead of a generic 400.
+    type: Optional[str] = None
+    # Populated by import previews (pipeline already normalized); manual
+    # entries omit them and the ledger runs the engine itself.
+    merchant_raw: Optional[str] = None
+    merchant_normalized: Optional[str] = None
+    source: Literal["photo", "manual", "receipt", "screenshot", "csv", "slash", "agent", "adjustment"]
     confidence: Optional[float] = None
     note: Optional[str] = None
     raw: Optional[RawIn] = None
@@ -50,11 +69,16 @@ class TransactionUpdate(CamelModel):
     """Partial update. All fields optional; unset keys preserve DB values."""
 
     occurred_at: Optional[datetime] = None
+    # PATCHing `merchant` (or merchantNormalized) is a manual override — the
+    # engine does NOT re-run; PATCHing `merchantRaw` re-runs normalization.
     merchant: Optional[str] = None
+    merchant_raw: Optional[str] = None
+    merchant_normalized: Optional[str] = None
     amount_cents: Optional[int] = None
     currency: Optional[str] = None
     category_id: Optional[str] = None
-    source: Optional[Literal["photo", "manual"]] = None
+    account_id: Optional[str] = None
+    source: Optional[Literal["photo", "manual", "receipt", "screenshot", "csv", "slash", "agent", "adjustment"]] = None
     confidence: Optional[float] = None
     note: Optional[str] = None
     raw: Optional[RawIn] = None
