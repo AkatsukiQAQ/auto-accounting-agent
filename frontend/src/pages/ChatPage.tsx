@@ -222,10 +222,10 @@ export function ChatPage() {
         <div><h1 className="hand text-xl leading-tight">MITA</h1><p className="text-[11px] text-ink-500">{zh ? '预算，一起掌握。' : 'A little clarity for your budget.'}</p></div>
       </header>
 
-      <img src={financeIconUrl} alt="" aria-hidden="true" className="pointer-events-none absolute -bottom-8 -right-8 z-0 w-[52vw] max-w-[620px] min-w-[320px] select-none opacity-[0.14] md:-bottom-16 md:right-0" />
-
-      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto" aria-live="polite">
-        <div className={`mx-auto flex min-h-full w-full max-w-3xl flex-col space-y-5 px-4 py-6 md:px-8 ${empty ? 'justify-center' : ''}`}>
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <img src={financeIconUrl} alt="" aria-hidden="true" className="pointer-events-none absolute bottom-0 right-1 z-0 h-[62%] w-auto max-w-[52%] select-none object-contain object-bottom opacity-[0.14] sm:h-[74%] md:right-[2vw] md:h-[88%] md:max-h-[700px]" />
+        <div className="relative z-10 h-full overflow-y-auto" aria-live="polite">
+          <div className={`mx-auto flex min-h-full w-full max-w-3xl flex-col space-y-5 px-4 py-6 md:px-8 ${empty ? 'justify-center' : ''}`}>
           {empty && <div className="max-w-xl space-y-5 rounded-2xl bg-cream-100/80 py-4 backdrop-blur-[2px]">
             <div><h2 className="hand-body text-3xl text-ink-900">{zh ? '今天想看看哪一笔账？' : 'What should we look at today?'}</h2><p className="mt-2 text-sm leading-6 text-ink-500">{zh ? '可以从预算现状、最近支出或下周计划开始。自然语言修改会先让你确认。' : 'Start with budget status, recent spending, or a next-week plan. Natural-language changes need confirmation.'}</p></div>
             <div className="flex flex-wrap gap-2">
@@ -245,7 +245,8 @@ export function ChatPage() {
           {history.data?.actions.filter(action => !action.payload.messageId).map(action => <ActionCard key={action.id} action={action} busy={busy} decide={(id, choice) => decision.mutate({ id, choice })} edit={(id, operations) => edit.mutateAsync({ id, operations }).then(() => undefined)} />)}
           {progress && <p role="status" className="rounded-xl bg-cream-100/90 text-sm text-ink-500">{progress}</p>}
           {error && <div role="alert" className="rounded-xl bg-cream-100/90 text-sm text-neg-500">{error.message}<button className="ml-2 underline" onClick={() => void refresh()}>{zh ? '刷新' : 'Refresh'}</button></div>}
-          <div ref={bottom} />
+            <div ref={bottom} />
+          </div>
         </div>
       </div>
 
